@@ -1,0 +1,66 @@
+name: build-book
+
+# Free CI: no local pandoc, no paid toolchain. Push markdown, get an EPUB back.
+# GitHub Actions free tier for public repos = unlimited minutes; on a private repo
+# this is ~2 min/run, well inside the 2,000 min/month free allowance.
+
+on:
+  push:
+    paths:
+      - '01-book/**'
+      - '.github/workflows/build-book.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ebook:
+    runs-on: ubuntu-latest
+    container:
+      image: pandoc/core:3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble manuscript.md
+        run: |
+          cd 01-book
+          {
+            printf '%% The Night Shift Reset\n%% J. Arek Thorne\n%% epub\n\n'
+            for f in chapters/*.md; do cat "$f"; printf '\n\\newpage\n\n'; done
+          } > manuscript.md
+          wc -w manuscript.md
+
+      - name: Build EPUB
+        run: |
+          cd 01-book
+          COVER=""
+          if [ -f ../02-kdp/cover-2560x1600.jpg ]; then COVER="--cover-image=../02-kdp/cover-2560x1600.jpg"; fi
+          mkdir -p build
+          pandoc manuscript.md \
+            --from markdown+fancy_lists \
+            --to epub3 \
+            --toc --toc-depth=1 --epub-chapter-level=1 \
+            --css=style.css \
+            --metadata=lang:en-US \
+            --metadata=title:"The Night Shift Reset" \
+            --metadata=subtitle:"The 28-day system for eating, caffeine and light timing" \
+            --metadata=author:"J. Arek Thorne" \
+            --metadata=description:"A 28-day eating, caffeine and light-timing system for night-shift workers. Educational, not medical advice." \
+            --metadata=subject:"shift work; sleep; night shift; nurses; occupational health" \
+            --metadata=rights:"Copyright 2026 J. Arek Thorne. All rights reserved." \
+            --metadata=title-page=true \
+            $COVER \
+            -o build/night-shift-reset.epub
+
+      - name: Build DOCX (for a comment-and-edit pass in Google Docs, free)
+        run: cd 01-book && pandoc manuscript.md -o build/night-shift-reset.docx
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: night-shift-reset-book-files
+          path: |
+            01-book/build/*.epub
+            01-book/build/*.docx
+          if-no-files-found: error
+          retention-days: 90
