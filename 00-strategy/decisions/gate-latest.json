@@ -19,6 +19,7 @@
   "errors": 0,
   "warnings": 0,
   "stats": {
+   "negated:H1": 1,
    "negated:X1": 3
   },
   "findings": []

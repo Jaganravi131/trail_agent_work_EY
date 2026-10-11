@@ -9,3 +9,7 @@
 | `04-seo/articles/01-sleep-after-night-shift.md` | reader | 1963 | 0 | 0 | PASS |
 | `04-seo/articles/02-what-to-eat-on-a-night-shift.md` | reader | 1515 | 0 | 0 | PASS |
 | `04-seo/articles/03-caffeine-on-night-shift.md` | reader | 1316 | 0 | 0 | PASS |
+
+## Let through on purpose (audit trail)
+
+- 4 match(es) were prose *about* the risk (negation or strike-through guarded the sentence), not the risk itself
