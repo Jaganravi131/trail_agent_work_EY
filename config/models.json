@@ -1,0 +1,192 @@
+{
+  "as_of": "2026-10-11",
+  "note": "Edit freely. `wf model --select` ranks these by licence fit first, then quality per VRAM. traits.outputs_may_train_other_models=false disqualifies a model as a fine-tune BASE under this repo's zero-capital commercial policy. Verify every claim against the model card at download time; this file is a shortlist with reasons, not legal advice.",
+  "models": [
+    {
+      "id": "qwen3.6-27b",
+      "family": "Qwen3.6",
+      "params_total": "27B",
+      "params_active": "27B dense",
+      "license": "Apache-2.0",
+      "vram_gb_4bit": 15.0,
+      "context_k": 262,
+      "strengths": [
+        "best quality that still fits a 24GB card",
+        "thinking mode",
+        "long context"
+      ],
+      "traits": {
+        "commercial": true,
+        "redistribute_finetune": true,
+        "outputs_may_train_other_models": true,
+        "osi_approved": true
+      },
+      "ollama_tag": "qwen3.6:27b",
+      "hf_repo": "Qwen/Qwen3.6-27B",
+      "verifiable_on_free_tier": false,
+      "notes": "primary drafting model when the operator has 24GB+"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "family": "Qwen3.6",
+      "params_total": "35B",
+      "params_active": "3B MoE",
+      "license": "Apache-2.0",
+      "vram_gb_4bit": 20.0,
+      "context_k": 256,
+      "strengths": [
+        "cheapest per token",
+        "fast decode"
+      ],
+      "traits": {
+        "commercial": true,
+        "redistribute_finetune": true,
+        "outputs_may_train_other_models": true,
+        "osi_approved": true
+      },
+      "ollama_tag": "qwen3.6:35b-a3b",
+      "hf_repo": "Qwen/Qwen3.6-35B-A3B",
+      "verifiable_on_free_tier": false,
+      "notes": "throughput play; quality close to the dense 27B on instruction tasks"
+    },
+    {
+      "id": "qwen3.6-8b",
+      "family": "Qwen3.6",
+      "params_total": "8B",
+      "params_active": "8B dense",
+      "license": "Apache-2.0",
+      "vram_gb_4bit": 5.5,
+      "context_k": 128,
+      "strengths": [
+        "fits a free Colab T4 for QLoRA",
+        "the fine-tune target",
+        "10-20\u00d7 faster loop"
+      ],
+      "traits": {
+        "commercial": true,
+        "redistribute_finetune": true,
+        "outputs_may_train_other_models": true,
+        "osi_approved": true
+      },
+      "ollama_tag": "qwen3.6:8b",
+      "hf_repo": "Qwen/Qwen3.6-8B",
+      "verifiable_on_free_tier": true,
+      "notes": "THE fine-tune base: Apache-2.0, LoRA/QLoRA ecosystem, 6-8GB training VRAM"
+    },
+    {
+      "id": "gemma4-26b-a4b",
+      "family": "Gemma 4",
+      "params_total": "26B MoE",
+      "params_active": "3.8B",
+      "license": "Apache-2.0",
+      "vram_gb_4bit": 14.0,
+      "context_k": 256,
+      "strengths": [
+        "best capability-to-hardware ratio for local use",
+        "moved off the old Gemma terms"
+      ],
+      "traits": {
+        "commercial": true,
+        "redistribute_finetune": true,
+        "outputs_may_train_other_models": true,
+        "osi_approved": true
+      },
+      "ollama_tag": "gemma4:26b-a4b",
+      "hf_repo": "google/gemma-4-26b-a4b",
+      "verifiable_on_free_tier": false,
+      "notes": "check the card: older Gemma releases carry usage guidelines, Gemma 4 is reported Apache-2.0"
+    },
+    {
+      "id": "gpt-oss-20b",
+      "family": "gpt-oss",
+      "params_total": "21B",
+      "params_active": "3.6B MoE",
+      "license": "Apache-2.0 + usage policy",
+      "vram_gb_4bit": 16.0,
+      "context_k": 128,
+      "strengths": [
+        "strong reasoning",
+        "native MXFP4",
+        "structured outputs"
+      ],
+      "traits": {
+        "commercial": true,
+        "redistribute_finetune": true,
+        "outputs_may_train_other_models": true,
+        "osi_approved": false
+      },
+      "ollama_tag": "gpt-oss:20b",
+      "hf_repo": "openai/gpt-oss-20b",
+      "verifiable_on_free_tier": false,
+      "notes": "requires the harmony response format on some servers; verify parser flags"
+    },
+    {
+      "id": "mistral-small4-22b",
+      "family": "Mistral Small 4",
+      "params_total": "22B",
+      "params_active": "22B",
+      "license": "Apache-2.0",
+      "vram_gb_4bit": 13.0,
+      "context_k": 128,
+      "strengths": [
+        "budget production",
+        "European languages"
+      ],
+      "traits": {
+        "commercial": true,
+        "redistribute_finetune": true,
+        "outputs_may_train_other_models": true,
+        "osi_approved": true
+      },
+      "ollama_tag": "mistral-small:24b",
+      "hf_repo": "mistralai/Mistral-Small-4-22B-Instruct",
+      "verifiable_on_free_tier": false,
+      "notes": ""
+    },
+    {
+      "id": "llama4-scout",
+      "family": "Llama 4",
+      "params_total": "109B",
+      "params_active": "17B MoE",
+      "license": "Llama 4 Community License",
+      "vram_gb_4bit": 60.0,
+      "context_k": 10000,
+      "strengths": [
+        "huge context"
+      ],
+      "traits": {
+        "commercial": true,
+        "redistribute_finetune": true,
+        "outputs_may_train_other_models": false,
+        "osi_approved": false
+      },
+      "ollama_tag": "llama4:scout",
+      "hf_repo": "meta-llama/Llama-4-Scout",
+      "verifiable_on_free_tier": false,
+      "notes": "KEPT IN THE LIST AS THE TRAP: not OSI-approved, MAU cap, and outputs may not be used to train competing models \u2014 which disqualifies the distil-then-fine-tune path"
+    },
+    {
+      "id": "smollm3-3b",
+      "family": "SmolLM3",
+      "params_total": "3B",
+      "params_active": "3B",
+      "license": "Apache-2.0",
+      "vram_gb_4bit": 2.4,
+      "context_k": 128,
+      "strengths": [
+        "trains in 20 minutes on a free T4",
+        "good enough for narrow formatters"
+      ],
+      "traits": {
+        "commercial": true,
+        "redistribute_finetune": true,
+        "outputs_may_train_other_models": true,
+        "osi_approved": true
+      },
+      "ollama_tag": "smollm3:3b",
+      "hf_repo": "HuggingFaceTB/SmolLM3-3B-Instruct",
+      "verifiable_on_free_tier": true,
+      "notes": "the right base when the task is formatting + constraint obedience, not reasoning"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "note": "Few-shot style card injected into every generation call. This is the $0 substitute for a fine-tune and the first thing to tune when output 'sounds wrong'. Keep total under ~4k chars.",
+  "from_files": [
+    "01-book/manuscript.md:900",
+    "04-seo/articles/03-caffeine-on-night-shift.md:800"
+  ],
+  "rules": [
+    "second person, concrete nouns",
+    "a number in every rule",
+    "one worked example per section",
+    "short sentence to land a point",
+    "never promise an outcome",
+    "redirect clinical questions",
+    "no em-dash pile-ups",
+    "British spelling is fine, hedging is not"
+  ],
+  "excerpts": []
+}

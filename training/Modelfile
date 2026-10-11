@@ -1,0 +1,10 @@
+# Serve the tuned adapter as a first-class Ollama model.
+#   ollama create wf-house -f training/Modelfile && ./wf eval --serve wf-house
+FROM qwen3.6:8b
+ADAPTER out/finetune/adapter
+
+PARAMETER temperature 0.4
+PARAMETER num_ctx 8192
+PARAMETER top_p 0.9
+# Do not set a system here: wealforge/llm.py already sends the constraint block plus the
+# voice card, and a second copy in the Modelfile is how the two drift apart.

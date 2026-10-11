@@ -15,7 +15,9 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
-from . import __version__, gate, generator, kdp, llm, metrics, models, roadmap, rubric as rubric_mod, scan, store
+from . import (__version__, dataset, evalkit, finetune, gate, generator, kdp, llm, metrics, modelhub,
+               models, pipeline, roadmap, rubric as rubric_mod, scan, store, validate)
+from . import commands
 
 CONFIG = Path("config")
 
@@ -96,8 +98,7 @@ def cmd_pick(args: argparse.Namespace) -> int:
     return 0
 
 
-KIND_BY_PLATFORM = {"kdp": "book", "code": "tool", "digital-product": "product",
-                    "seo-site": "article", "audience": "kit"}
+KIND_BY_PLATFORM = pipeline.KIND_BY_PLATFORM   # one map, shared with `wf work`
 
 
 def _build(st: store.Store, idea: dict[str, Any], rb: rubric_mod.Rubric, args: argparse.Namespace) -> int:
@@ -121,30 +122,28 @@ def _build(st: store.Store, idea: dict[str, Any], rb: rubric_mod.Rubric, args: a
 
     asset = models.Asset.new(idea["id"], kind, str(outdir))
     if args.draft:
-        try:
-            prov = llm.Provider.detect(args.provider)
-            words = {"book": 1400, "article": 1500, "kit": 600, "tool": 400, "product": 500}[kind]
-            secs = ["chapter 1", "the mechanism", "worked example", "objection handling", "do this tonight"][:args.sections]
-            drafted = []
-            for i, sec in enumerate(secs, 1):
-                res = prov.complete(llm.brief_to_prompt(brief, sec, words))
-                f = generator.write(outdir, f"draft/{i:02d}-{models.slugify(sec)}.md", res.text)
-                drafted.append(str(f))
-                st.event("draft", str(f), {"provider": res.provider, "model": res.model,
-                                          "in_tokens": res.in_tokens, "out_tokens": res.out_tokens})
-            files["draft/README.md"] = ("Drafted with " + res.provider + "/" + res.model +
-                                        ". Every claim still needs a human fact-check; the gate checks "
-                                        "form, not truth.\n\n" + "\n".join(f"- {d}" for d in drafted))
-            generator.write(outdir, "draft/README.md", files["draft/README.md"])
+        # One drafting path for the whole CLI: the gate-repairing pipeline. A second,
+        # ungated "quick draft" here would be the path people actually use, and the
+        # one that ships unreviewed prose.
+        prov = llm.Provider.detect(args.provider)
+        wr = pipeline.work_idea(st, idea, prov, out_root=Path(args.out_dir or "out"),
+                                max_sections=args.sections,
+                                word_target={"book": 1400, "article": 1500, "kit": 600,
+                                            "tool": 400, "product": 500}[kind],
+                                log=lambda k, m: print(f"    [{k}] {m[:120]}"))
+        if wr.fully_generated and wr.gate_errors == 0:
             asset.stage = "drafted"
-            asset.word_count = sum(models.count_words(Path(d).read_text()) for d in drafted)
-        except llm.LLMUnavailable as e:
-            print(f"\n  ! draft step skipped, not faked:\n    {e}", file=sys.stderr)
-            generator.write(outdir, "draft/HOW-TO.md",
-                            "No provider configured, so no prose was generated — deliberately.\n\n"
-                            "Either set WEALFORGE_LLM_CMD to any local command, or generate the prompt "
-                            "for free:\n\n    wf build --idea " + idea["id"] + " --emit-prompt draft/prompt.txt\n\n"
-                            "Then feed the output back with `--from-file` so the ledger records provenance.\n")
+        elif wr.total_words:
+            asset.stage = "drafted"
+        asset.word_count = wr.total_words
+        print(f"  drafted {sum(1 for s_ in wr.sections if s_.status == 'generated')}/"
+              f"{len(wr.sections)} sections, {wr.total_words} words, {wr.total_tokens} tokens, "
+              f"{wr.gate_errors} gate error(s)")
+        for s_ in wr.sections:
+            if s_.status in ("needs_human", "failed", "offline"):
+                print(f"    ! {s_.name}: {s_.status} — {s_.note or 'no model'}")
+        if not prov.available:
+            print(f"    (offline: {prov.probed.get('reason', 'no provider')})", file=sys.stderr)
     else:
         generator.write(outdir, "draft/HOW-TO.md",
                         "Brief written; no prose yet. Re-run with --draft (needs a provider) or "
@@ -315,6 +314,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     shape for autonomous infrastructure at $0.
     """
     print(f"wealforge v{__version__} — loop run {date.today().isoformat()}\n")
+    prov = llm.Provider.detect(args.provider, probe=False)
+    print(f"model: {prov.mode}{':' + prov.model if prov.model else ''} "
+          f"({'usable, $0 local' if prov.is_local else 'offline — drafting stays a human/prompt step'})\n")
     rc = 0
     ns = argparse.Namespace(db=args.db, rubric=None, seed=args.seed, ask=False, out=None, no_rejected=False)
     rc |= cmd_score(ns)
@@ -331,6 +333,25 @@ def cmd_run(args: argparse.Namespace) -> int:
         rc |= cmd_gate(argparse.Namespace(paths=group, bundle=bundled, rules=None, json=False,
                                            strict=False, summary=not bundled,
                                            out="00-strategy/decisions/gate-latest.md", db=args.db))
+    if args.with_model:
+        print("\n" + "=" * 72 + "\n\n— drafting (model → gate → repair)\n")
+        rc |= commands.cmd_work(argparse.Namespace(
+            db=args.db, idea=None, max_ideas=args.max_ideas, sections=3, words=args.words,
+            max_attempts=pipeline.REPAIR_MAX_DEFAULT, out_dir=args.out_dir or "out",
+            provider=args.provider, no_probe=False, allow_fail=True, verbose=True))
+        print("\n" + "=" * 72 + "\n")
+    # Corpus + eval are free and offline-safe, so they run every cycle: the loop has to
+    # keep measuring whether the agent's output is good, not just whether it exists.
+    print("— rebuilding the fine-tuning corpus\n")
+    rc2 = commands.cmd_dataset(argparse.Namespace(db=args.db, out="dataset", include=None,
+                                                   format="sharegpt", approvals=None, no_gate=False,
+                                                   dry_run=False))
+    rc |= 0 if args.allow_fail else (rc2 and 0)      # dataset build can legitimately find nothing
+    print("\n— eval self-check (style + gate on committed assets; no model called)\n")
+    rc |= commands.cmd_eval(argparse.Namespace(
+        db=args.db, cases="config/eval_prompts.json", grade=None, pattern=["**/*.md"],
+        provider="offline", self_check=True, no_repo_grade=False, strict=False, json=False,
+        out="00-strategy/decisions/eval-latest.md", compare=None, tolerance=2.0))
     print("\n" + "=" * 72 + "\n")
     rc |= cmd_report(argparse.Namespace(tracker=args.tracker, out="00-strategy/decisions/report-latest.md",
                                          days_live=30, cover_tested=False, db=args.db))
@@ -382,6 +403,7 @@ def build_parser() -> argparse.ArgumentParser:
     common(sp); sp.set_defaults(fn=cmd_score)
 
     sp = sub.add_parser("pick", help="select the top N (nothing below the bar gets picked)")
+    sp.add_argument("--words", type=int, default=1400, help="per-section word target for --draft")
     sp.add_argument("--top", type=int); sp.add_argument("--build", action="store_true",
                     help="also write briefs/metadata for each pick")
     sp.add_argument("--kind", choices=["book", "article", "tool", "kit", "product"],
@@ -390,7 +412,8 @@ def build_parser() -> argparse.ArgumentParser:
                     help="generate prose (needs a provider; never faked)")
     sp.add_argument("--sections", type=int, default=3); sp.add_argument("--days", type=int, default=30)
     sp.add_argument("--product-file"); sp.add_argument("--no-gate", action="store_true")
-    sp.add_argument("--provider", choices=["anthropic", "openai", "cmd"])
+    sp.add_argument("--provider", help="registry id (qwen3.6:8b), ollama:<tag>, openai:<base_url>, "
+                                       "cmd:<prog>, anthropic, openai, offline (default: auto-detect)")
     sp.add_argument("--emit-markdown", dest="emit_markdown")
     common(sp); sp.set_defaults(fn=cmd_pick)
 
@@ -443,13 +466,19 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("log", help="event log"); sp.add_argument("--limit", type=int, default=20)
     sp.add_argument("--kind"); sp.set_defaults(fn=cmd_log)
 
-    sp = sub.add_parser("run", help="full loop: score → pick → build → gate → report")
+    commands.add_commands(sub)
+
+    sp = sub.add_parser("run", help="full loop: score → pick → build → gate → dataset → eval → report")
     sp.add_argument("--seed"); sp.add_argument("--kind", choices=["book","article","tool","kit","product"])
     sp.add_argument("--out-dir"); sp.add_argument("--draft", action="store_true")
     sp.add_argument("--provider"); sp.add_argument("--paths", nargs="*")
     sp.add_argument("--tracker", default="06-tracking/01-tracker.csv")
     sp.add_argument("--allow-fail", action="store_true", help="always exit 0 (for weekly cron noise)")
     sp.add_argument("--bundle", action="store_true")
+    sp.add_argument("--with-model", dest="with_model", action="store_true",
+                    help="also draft prose through the gate-repair pipeline (needs a reachable model)")
+    sp.add_argument("--max-ideas", type=int, default=3)
+    sp.add_argument("--words", type=int, default=900)
     sp.set_defaults(fn=cmd_run)
     return p
 

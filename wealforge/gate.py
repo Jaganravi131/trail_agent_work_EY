@@ -70,9 +70,21 @@ CREDENTIAL_RE = re.compile(
     r"(nurse|physician|therapist|dietitian|psychologist|sleep\s+specialist|somnologist|accountant|"
     r"attorney|lawyer|contractor)"
     r"|\b(registered|certified|licensed)\s+nurse\b"
-    r"|\b[A-Z][a-zA-Z.'\- ]{2,28},\s*(?:RN|BSN|MSN|MD|DO|PhD|PsyD|NP|PA-C|RD|CPC|DC|LCSW|LMFT|CFP)\b"
     r"|\b(sleep\s+specialist|somnologist|board[- ]certified)\b"
     r"|as (a|an)\s+(your|our|the)\s+(doctor|clinician|physician|nurse))", re.I)
+
+#: Post-nominals are matched **case-sensitively and separately**, because under `re.I`
+#: ", do" in "if you do, then…" reads as a Doctor of Osteopathy and every second sentence
+#: in an instructional book becomes a "credential claim". A degree suffix is spelled in
+#: capitals in the real world; requiring that costs nothing and removes the whole class.
+CREDENTIAL_POSTNOMINAL = re.compile(
+    r"\b[A-Z][a-zA-Z.'\- ]{2,28},\s*(?:RN|BSN|MSN|MD|DO|PhD|PsyD|NP|PA-C|RD|CPC|DC|LCSW|LMFT|CFP|DNP)\b")
+
+
+def credential_match(text: str) -> re.Match | None:
+    """Either credential form. Kept as one function so the required-safeguard rule, the
+    presence rule and the operator docs all ask the same question."""
+    return CREDENTIAL_RE.search(text) or CREDENTIAL_POSTNOMINAL.search(text)
 CREDENTIAL_SAFE = re.compile(r"(not a clinician|not\s+(a\s+)?(doctor|clinician|nurse|physician)|"
                              r"no\s+credentials|not\s+written\s+by\s+a\s+clinician|"
                              r"deliberately not\b|is not\s+a\s+(medical|legal)\s+advice)", re.I)
@@ -96,7 +108,11 @@ SUPPLEMENT_NAMED = re.compile(r"\b(melatonin|ashwagandha|5-?htp|valerian|kava|l-
 INCOME_PROMISE = re.compile(
     r"(\$\s?\d[\d,]*\s?(per|/|a)?\s?(day|week|month)\b[^.]{0,30}(guarantee|easy|passive|replac\w+ your salary)|"
     r"guaranteed\s+(income|earnings|results|sales)|earn\b[^.]{0,20}\$\s?\d{3,}[^.]{0,20}(daily|monthly|guaranteed)|"
-    r"financial freedom|quit your job (in|by)|replace your salary|passive income (machine|system) (that|which)?"
+    r"(i|we) promise[d]? (you|to you)|promise[s]? (you|readers) (will|can|to) (make|earn|net)"
+    r"|\b(will|you'?ll|you will)\s+(make|earn|net|clear|bring in|double)\s+(\$\s?\d|[a-z]+\s+\$\s?\d)"
+    r"|\$\s?\d[\d,]*\s+(in|during|within) (your |the )?(first|\d+)\s+(week|month|30 days)"
+    r"|double your income|financial freedom|quit your job (in|by)|replace your salary"
+    r"|passive income (machine|system) (that|which)?"
     r"\s*(makes|prints)|get rich|six[- ]figure (month|year)|no effort|money for nothing)", re.I)
 
 FAKE_ENGAGEMENT = re.compile(
@@ -158,14 +174,52 @@ def _allowed_on_line(text: str, line_no: int) -> set[str]:
     return set(m.group(1).split()) if m else set()
 
 
+#: Leading list markers and emphasis, so "**Not** `X, RN`" is still read as a prohibition.
+_SENTENCE_LEAD = r"^\s*(?:[-*>+]\s*)?(?:\*\*|__|`+|~~)*\s*"
+_PROHIBITION_START = re.compile(_SENTENCE_LEAD + r"(no|never|not|don'?t|do not|cannot|can't|avoid|"
+                                r"without|refus\w*|prohibit\w*|banned?|forbidden|reject\w*)\b", re.I)
+
+
+#: `~~struck through~~` in this repo's decision docs means "we considered this and said no".
+#: Grading a rejected item as a live violation is how a checker gets muted, so rejected spans
+#: are skipped and counted — the count is the audit trail that something was skipped and why.
+STRIKE_RE = re.compile(r"~~[^~]+~~", re.S)
+
+
+def _struck_spans(text: str) -> list[tuple[int, int]]:
+    return [(m.start(), m.end()) for m in STRIKE_RE.finditer(text)]
+
+
+def _in_struck(spans: list[tuple[int, int]], pos: int) -> bool:
+    return any(a <= pos < b for a, b in spans)
+
+
+#: Markdown bullets and table rows are their own statements in these documents, so a
+#: prohibition written at the start of a bullet ("No scraping of Amazon reviews") must govern
+#: the bullet it opens — not the whole preceding paragraph.
+_SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+|\n\s*(?:[-*>+]\s+|\d+[.)]\s+)")
+
+
+def _before_on_line(text: str, start: int) -> str:
+    """Same line, up to the match. A quoted example of a bad credential is cited, not claimed,
+    and the citation marker is always on the same line as the quote."""
+    ls = text.rfind("\n", 0, start) + 1
+    return text[ls:start]
+
+
 def _prohibited_context(text: str, start: int, end: int) -> bool:
     lo = max(0, start - NEGATION_WINDOW)
     window = text[lo:end]
     # Look at the current sentence, not the whole document.
-    sentence = re.split(r"(?<=[.!?])\s+", window)[-1]
-    if re.match(r"^\s*[-*>]?\s*(no|never|don'?t|do not|avoid|without)\b", sentence, re.I):
-        return True                      # imperative prohibition: "No fake reviews." / "Never upvote…"
-    return bool(NEGATION.search(sentence))
+    sentence = _SENTENCE_BOUNDARY.split(window)[-1]
+    if _PROHIBITION_START.match(sentence):
+        return True                      # imperative prohibition: "No fake reviews." / "**Not** X"
+    if NEGATION.search(sentence):
+        return True
+    # Same-line prefix, checked last so it can only ever *widen* the guard by one line.
+    # Deliberately looks only BEFORE the match: "cures insomnia … never drive drowsy" is a
+    # violation plus a safety note in one line, and the safety note must not excuse it.
+    return bool(NEGATION.search(_before_on_line(text, start)))
 
 
 # --------------------------------------------------------------- ruleset ----
@@ -186,8 +240,10 @@ class Rule:
 
 BASE_RULES: tuple[Rule, ...] = (
     Rule("H1", "error", "Claim of clinical credential",
-         r"", "A credential you do not hold, on a health-adjacent asset, is consumer fraud and an "
-              "instant takedown trigger on most platforms.",
+         r"__CREDENTIAL__", "A credential you do not hold, on a health-adjacent asset, is consumer fraud "
+                            "and an instant takedown trigger on most platforms. This fires wherever the "
+                            "claim appears — in a bio, a chapter, a sales page or an ad — not only in a "
+                            "bio block, because that is where models put it when asked for authority.",
          "State lived experience instead, or add the real licence number you can substantiate.",
          r""),
     Rule("M1", "error", "Disease treatment or cure claim",
@@ -244,6 +300,9 @@ BASE_RULES: tuple[Rule, ...] = (
          "Record whether a human reviewed and takes responsibility for every claim.", r""),
 )
 
+#: Rules whose pattern may be legitimately *quoted* by an asset that refuses the claim.
+_SAFE_GUARDS: dict[str, "re.Pattern[str]"] = {"__CREDENTIAL__": CREDENTIAL_SAFE}
+
 _PLACEHOLDERS = {
     "__TREATMENT__": TREATMENT_CLAIM.pattern,
     "__TREATMENT2__": TREATMENT_CLAIM2.pattern,
@@ -253,6 +312,7 @@ _PLACEHOLDERS = {
     "__SCRAPE__": SCRAPING.pattern,
     "__TRADEMARK__": TRADEMARKS.pattern,
     "__INCOME__": INCOME_PROMISE.pattern,
+    "__CREDENTIAL__": CREDENTIAL_RE.pattern,
     "__SLOP__": TEMPLATE_SLOP.pattern,
 }
 
@@ -362,7 +422,11 @@ def load_rules(extra_path: str | Path | None = None) -> tuple[list[Rule], dict[s
 #: fake engagement, scraping, trademarks, credentials) still apply in full.
 INTERNAL_HINTS = ("00-strategy", "02-kdp", "06-tracking", "07-risks", "wealforge/",
                   "tests/", "README", "CLAUDE", "AGENTS", "05-marketing", "keyword-map", "checklist",
-                  "brief", "plan", "notes", "decisions")
+                  "brief", "plan", "notes", "decisions",
+                  # Planning and bookkeeping artefacts. A content calendar is not something a reader
+                  # consumes, so demanding a medical disclaimer in it is a wolf-cry — and every wolf-cry
+                  # costs trust in the whole gate.
+                  "calendar", "work-log", "metadata", "dataset-card", "training/readme")
 
 
 def audience_of(target: str) -> str:
@@ -380,6 +444,7 @@ def evaluate_text(text: str, target: str = "<text>", rules: list[Rule] | None = 
                      extra_rules=max(0, len(rules) - len(BASE_RULES)))
     rep.words = words if words is not None else len(re.findall(r"[A-Za-z0-9'\u2019\-]+", text))
     ctx = _context_of(text)
+    strikes = _struck_spans(text)
 
     # 1. presence rules -----------------------------------------------------
     by_id = {r.id: r for r in rules}
@@ -390,19 +455,54 @@ def evaluate_text(text: str, target: str = "<text>", rules: list[Rule] | None = 
         pattern_src = _PLACEHOLDERS.get(rule.pattern, rule.pattern)
         if not pattern_src or pattern_src.startswith("__"):
             continue                       # safeguard rules execute in step 2
+        if rule.pattern == "__CREDENTIAL__":
+            # one rule, two matchers (prose claim + capitalised post-nominal)
+            cred_hits = []
+            for rx in (CREDENTIAL_RE, CREDENTIAL_POSTNOMINAL):
+                cred_hits += list(rx.finditer(text))
+            for m in cred_hits:
+                if _in_struck(strikes, m.start()):
+                    rep.stats["strikethrough_skipped"] = rep.stats.get("strikethrough_skipped", 0) + 1
+                    continue
+                ln = _nearest_line(text, m.start())
+                if rule.id in _allowed_on_line(text, ln) or rule.id in _allowed_on_line(text, 0):
+                    rep.stats[f"allowed:{rule.id}"] = rep.stats.get(f"allowed:{rule.id}", 0) + 1
+                    rep.stats.setdefault("allowed_by_marker", []).append(f"{rule.id} {rep.target}#{ln}")
+                    continue
+                if _prohibited_context(text, m.start(), m.end()):
+                    rep.stats[f"negated:{rule.id}"] = rep.stats.get(f"negated:{rule.id}", 0) + 1
+                    continue
+                if CREDENTIAL_SAFE.search(text):
+                    rep.stats[f"exempt:{rule.id}"] = rep.stats.get(f"exempt:{rule.id}", 0) + 1
+                    continue
+                if any(f.rule_id == rule.id and f.line == ln for f in rep.findings):
+                    continue      # the two matchers can overlap on one span; one finding per line
+                rep.findings.append(Finding(rule.id, rule.severity, rule.title, rule.why, rule.fix,
+                                            ln, _excerpt(text, *m.span())))
+            continue
         compiled = re.compile(pattern_src, re.I | re.M)
         if only_if and not only_if.search(text):
             continue
         allow = _allowed_on_line(text, 0)
         hits = 0
         for m in compiled.finditer(text):
+            if _in_struck(strikes, m.start()):
+                rep.stats["strikethrough_skipped"] = rep.stats.get("strikethrough_skipped", 0) + 1
+                continue
             ln = _nearest_line(text, m.start())
             if rule.id in _allowed_on_line(text, ln) or rule.id in allow:
                 rep.stats[f"allowed:{rule.id}"] = rep.stats.get(f"allowed:{rule.id}", 0) + 1
+                rep.stats.setdefault("allowed_by_marker", []).append(f"{rule.id} {rep.target}#{ln}")
                 continue
             if _prohibited_context(text, m.start(), m.end()):
                 # Prose telling the reader/operator not to do the thing is not the thing.
                 rep.stats[f"negated:{rule.id}"] = rep.stats.get(f"negated:{rule.id}", 0) + 1
+                continue
+            safe = _SAFE_GUARDS.get(rule.pattern)
+            if safe and safe.search(text):
+                # The asset explicitly disclaims the credential — "not a clinician" is a
+                # different document from one claiming a licence it does not have.
+                rep.stats[f"exempt:{rule.id}"] = rep.stats.get(f"exempt:{rule.id}", 0) + 1
                 continue
             hits += 1
             rep.findings.append(Finding(rule.id, rule.severity, rule.title, rule.why, rule.fix,
@@ -438,10 +538,11 @@ def evaluate_text(text: str, target: str = "<text>", rules: list[Rule] | None = 
             "Plain-words disclosure at the top of the page.",
             ctx["affiliate"], bool(AFFILIATE_DISCLOSURE.search(text)))
     require("H1b", "error", "Credential language in an author bio with no disclaiming line",
-            "A fabricated or implied clinical credential on a health asset.",
+            "A fabricated or implied clinical credential on a health asset. (H1 catches the claim "
+            "itself; H1b is the bio-context version for assets whose wording merely *implies* one.)",
             "Either state the real, substantiable credential, or say plainly the author is not a clinician.",
-            ctx["credential_context"] and bool(CREDENTIAL_RE.search(text)) and rep.words < 900
-            and not _prohibited_context(text, CREDENTIAL_RE.search(text).start(), CREDENTIAL_RE.search(text).end()),
+            ctx["credential_context"] and bool(credential_match(text)) and rep.words < 900
+            and not _prohibited_context(text, credential_match(text).start(), credential_match(text).end()),
             bool(CREDENTIAL_SAFE.search(text)))
 
     # 3. quality heuristics -------------------------------------------------
@@ -544,4 +645,41 @@ def summary_markdown(reports: list[GateReport]) -> str:
             for f in r.findings:
                 lines.append(f"- `{r.target}`{'#'+str(f.line) if f.line else ''} "
                              f"**[{f.severity}] {f.rule_id} {f.title}** — {f.excerpt or f.why}")
+
+    # Anything the gate chose NOT to report is listed too. A silent pass is how a checker gets
+    # trusted and then muted: the reader should see that 4 matches were prose-about-the-risk,
+    # 2 were struck through, and 1 was allowed by a marker — and where.
+    allowed: dict[str, list[str]] = {}
+    tallies = {"negated": 0, "exempt": 0, "strikethrough_skipped": 0}
+    for r in reports:
+        for k, v in r.stats.items():
+            if k == "strikethrough_skipped":
+                tallies["strikethrough_skipped"] += v
+            elif k.startswith("allowed_by_marker"):
+                for loc in v:
+                    rid, _, where = loc.partition(" ")
+                    allowed.setdefault(rid, []).append(where)
+            elif k.startswith("allowed:"):
+                pass
+            elif k.startswith("negated:"):
+                tallies["negated"] += v
+            elif k.startswith("exempt:"):
+                tallies["exempt"] += v
+    if allowed or any(tallies.values()):
+        lines += ["", "## Let through on purpose (audit trail)", ""]
+        if allowed:
+            for rid, locs in sorted(allowed.items()):
+                where = ", ".join(f"`{loc}`" for loc in locs[:6])
+                extra = "" if len(locs) <= 6 else f" (+{len(locs) - 6} more)"
+                lines.append(f"- {len(locs)} match(es) for **{rid}** dropped by an explicit "
+                             f"`<!-- gate:allow {rid} -->` marker: {where}{extra}")
+        if tallies["negated"]:
+            lines.append(f"- {tallies['negated']} match(es) were prose *about* the risk "
+                         f"(negation or strike-through guarded the sentence), not the risk itself")
+        if tallies["strikethrough_skipped"]:
+            lines.append(f"- {tallies['strikethrough_skipped']} span(s) inside `~~struck "
+                         f"through~~`, i.e. considered and rejected")
+        if tallies["exempt"]:
+            lines.append(f"- {tallies['exempt']} finding(s) cleared by a live safeguard line "
+                         f"(e.g. a disclaimer present in the bundle)")
     return "\n".join(lines) + "\n"

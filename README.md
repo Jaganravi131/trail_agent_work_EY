@@ -47,6 +47,8 @@ or push and let `.github/workflows/build-book.yml` do it with the `pandoc/core:3
 
 Portfolio 001 above is what the loop *produced*. `wealforge/` is the loop, as software:
 stdlib-only Python, no dependencies, no server, no paid tool, no ability to spend money.
+Generation runs on a local open-weight model (Ollama or any OpenAI-compatible server) by
+default; hosted APIs need an explicit `WEALFORGE_ALLOW_PAID=1`.
 
 ```bash
 ./wf score          # pre-screen 17 disqualifiers → score the pool → 00-strategy/decisions/
@@ -56,10 +58,16 @@ stdlib-only Python, no dependencies, no server, no paid tool, no ability to spen
 ./wf report         # trends → diagnosis tree → exactly ONE experiment to run
 ./wf today          # this day's human actions from the 90-day schedule
 ./wf run            # the whole loop (what CI runs weekly)
-python3 -m unittest discover -s tests -q     # 92 tests, no network
+./wf model --select --for-finetune   # which open-weight model, ranked by licence fit then VRAM
+./wf work           # draft → gate → repair → validate, on every selected idea
+./wf dataset        # fine-tuning corpus from gate-passing approved assets — or the "not yet" verdict
+./wf finetune       # QLoRA/Colab/Axolotl/LLaMA-Factory configs into training/
+./wf eval --self-check              # style + gate grades on the committed assets, no model needed
+python3 -m unittest discover -s tests -q     # 158 tests, no network
 ```
 
-Twelve modules; `wealforge/README.md` has the architecture and the extension points. The
+Nineteen modules; `wealforge/README.md` has the architecture and the extension points, and
+`wealforge/FINE-TUNING.md` covers the model layer, the corpus rules and the eval harness. The
 load-bearing behaviours, all covered by tests:
 
 - **A stage machine that can't be skipped.** An asset cannot reach `gated` without a passing
@@ -77,9 +85,23 @@ load-bearing behaviours, all covered by tests:
 - **Offline is a mode, not a failure.** No provider configured ⇒ the agent writes briefs, math,
   checklists and verdicts and *refuses to emit prose*, pointing at `--emit-prompt` instead.
   A test asserts the offline path never opens a socket.
+- **The model is never the judge.** Whatever answers the wire — a 2026 8B model or a frontier
+  API — its output is a candidate that must pass the gate. Fail it and the loop feeds the findings
+  back for at most 3 attempts, keeps the least-bad draft, marks the section `NEEDS-HUMAN`, and
+  refuses the stage advance. Proven over real HTTP against a stub server.
+- **A fine-tune is earned twice.** The corpus has a floor (150 SFT sections / 40 preference pairs);
+  below it `wf dataset` tells you to keep writing instead of training, and refuses to emit a config
+  that pretends otherwise. Above it, the adapter still has to beat the base model on
+  `wf eval --compare` — where an adversarial case flipping from refusal to compliance is a hard
+  regression, not a style preference.
+- **Training data fails closed.** Only gate-passing files enter the corpus; if `config/approval.json`
+  has entries, only content-hash-matching operator-signed files do. Edit an approved file after
+  sign-off and it drops out rather than training the model on text nobody read.
 
-`config/rubric.json` (weights), `config/scan_seed.json` (idea pool) and
-`config/schedule.json` (90-day plan) are the three files to edit when you disagree with it.
+`config/rubric.json` (weights), `config/scan_seed.json` (idea pool),
+`config/models.json` (model registry and licence traits), `config/voice.json` (the style card
+injected into every generation call), `config/eval_prompts.json` (golden prompts) and
+`config/schedule.json` (90-day plan) are the files to edit when you disagree with it.
 
 ## Non-negotiables baked into these assets
 

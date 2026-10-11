@@ -586,10 +586,20 @@ class TestModels(unittest.TestCase):
 
 # -------------------------------------------------------------- llm ----
 class TestProvider(unittest.TestCase):
+    #: Detection is env-driven, so an offline assertion must scrub *every* knob the
+    #: resolver reads — including a live Ollama URL in the operator's shell. A test that
+    #: only passes on a machine with no model server is a test that will be deleted.
+    MODEL_ENV = ("ANTHROPIC_", "OPENAI_", "WEALFORGE_", "OLLAMA_HOST")
+    #: Auto-detect probes Ollama's default port on purpose, so "no provider" tests must pin a
+    #: closed port or they depend on whether the operator happens to have a model server up.
+    NO_SERVER = {"WEALFORGE_OLLAMA_URL": "http://127.0.0.1:1"}
+
     def test_offline_is_a_mode_not_a_failure(self):
         import os
         saved = {k: os.environ.pop(k) for k in list(os.environ)
-                 if k.startswith(("ANTHROPIC_", "OPENAI_", "WEALFORGE_LLM"))}
+                 if k.startswith(self.MODEL_ENV)}
+        saved.update({k: v for k, v in ((k, os.environ.get(k)) for k in self.NO_SERVER) if v})
+        os.environ.update(self.NO_SERVER)
         try:
             prov = llm.Provider.detect()
             self.assertEqual(prov.mode, "offline")
@@ -602,7 +612,9 @@ class TestProvider(unittest.TestCase):
 
     def test_no_request_is_ever_made_without_a_key(self):
         """The loop must be runnable at $0: assert the offline path never opens a socket."""
+        import os
         import socket
+        saved = {k: os.environ.pop(k) for k in list(os.environ) if k.startswith(self.MODEL_ENV)}
         real = socket.socket
         def boom(*a, **k):
             raise AssertionError("network attempted while offline")
@@ -615,6 +627,9 @@ class TestProvider(unittest.TestCase):
             self.assertEqual(rc.returncode, 0, rc.stderr[-400:])
         finally:
             socket.socket = real
+
+        os.environ.update(saved)
+
 
     def test_prompt_states_the_constraints_it_must_not_break(self):
         pr = llm.brief_to_prompt("BRIEF", "chapter 2", 1400)

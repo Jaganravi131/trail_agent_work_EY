@@ -1,9 +1,11 @@
 name: agent-loop
 
-# The unattended half of the operation: re-score, re-gate, report. On GitHub's
-# free runners this costs nothing and needs no secrets to be useful. If provider
-# keys are added as repo secrets later, DRAFT=1 makes it draft prose too — still
-# with a human in the loop before anything is published.
+# The unattended half of the operation: re-score, re-gate, rebuild the corpus,
+# measure the writing, report. On GitHub's free runners this costs nothing and needs
+# no secrets to be useful — the model path is exercised against a local stub server,
+# so the HTTP integration is verified on every push without pulling 15 GB of weights.
+# If provider keys are added as repo secrets later, DRAFT=1 makes it draft prose too —
+# still with a human in the loop before anything is published.
 
 on:
   schedule:
@@ -13,6 +15,8 @@ on:
       - 'wealforge/**'
       - 'config/**'
       - 'tests/**'
+      - 'tools/**'
+      - 'training/**'
       - '.github/workflows/agent.yml'
   pull_request:
   workflow_dispatch:
@@ -33,14 +37,19 @@ concurrency:
 jobs:
   loop:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       DRAFT: ${{ github.event.inputs.draft == 'true' && '1' || '0' }}
       # Secrets are exposed as env vars only (never interpolated into a shell line,
       # which is how keys end up in public logs). The job works without them: it
       # scores, gates and reports, and simply skips the drafting step.
+      # WEALFORGE_ALLOW_PAID is deliberately NOT set: a scheduled job must not be
+      # able to spend, even with a key present.
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # The stub model server binds here; every step then sees the same provider the
+      # wire-path job starts, and offline steps just find nothing listening.
+      WEALFORGE_OLLAMA_URL: http://127.0.0.1:11434
     steps:
       - uses: actions/checkout@v4
 
@@ -56,16 +65,120 @@ jobs:
           python3 -m wealforge gate 01-book --bundle
           python3 -m wealforge gate 03-tool 04-seo --summary --out 00-strategy/decisions/gate-latest.md
 
-      - name: Self-gate the agent's own docs and tests
-        run: python3 -m wealforge gate wealforge/ tests/ config/ --summary --strict
+      - name: Self-gate the agent's own docs, tests and configs
+        run: python3 -m wealforge gate wealforge/ tests/ config/ tools/ training/ --summary --strict
 
-      - name: Loop — score, pick, brief, report
+      - name: Model registry sanity (offline — ranks by licence, then VRAM)
+        run: |
+          python3 -m wealforge model --list
+          python3 -m wealforge model --select --for-finetune --out 00-strategy/decisions/model-recommendation.md
+          # A licence that forbids training on its outputs must never be a tune base.
+          grep -q 'llama4-scout' 00-strategy/decisions/model-recommendation.md \
+            && grep -A2 'llama4-scout' 00-strategy/decisions/model-recommendation.md | grep -qi 'DISQUALIFIED'
+
+      - name: Build the fine-tuning corpus + training configs
+        run: |
+          python3 -m wealforge dataset --out dataset
+          python3 -m wealforge finetune --dataset-dir dataset --out training
+          python3 - <<'PY'
+          import json, pathlib, py_compile
+          s = json.loads(pathlib.Path("dataset/stats.json").read_text())
+          assert s["sft_examples"] >= 20, f"corpus too small to be real: {s}"
+          # The emitted training code must be valid on a clean runner, or the
+          # operator discovers it at minute nine of a GPU session.
+          for f in ("unsloth_qlora.py", "dpo_tune.py"):
+              py_compile.compile(f"training/{f}", doraise=True, cfile="/tmp/chk.pyc")
+          nb = json.loads(pathlib.Path("training/colab-qlora.ipynb").read_text())
+          assert nb["nbformat"] == 4 and len(nb["cells"]) >= 6
+          PY
+          bash -n training/train.sh
+          # The templates must still say what they are for; these greps fail if a refactor
+          # quietly drops the part of the recipe that makes it fit a free T4.
+          test -f training/README.md && test -f training/axolotl.yaml && test -f training/llamafactory.yaml
+          grep -qi '4-bit' training/README.md
+          grep -qi 'adapter' training/unsloth_qlora.py training/axolotl.yaml
+          grep -qi 'load_in_4bit' training/unsloth_qlora.py
+          grep -qi 'provenance' dataset/dataset-card.md
+          grep -qi 'licence' dataset/dataset-card.md
+
+      - name: The wire path against a local stub model server (no GPU, no secrets)
+        run: |
+          python3 tools/model_stub.py --port 11434 --host 127.0.0.1 --bad-first &
+          STUB=$!
+          trap 'kill $STUB 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:11434/api/tags >/dev/null && break
+            sleep 1
+          done
+          export WEALFORGE_OLLAMA_URL=http://127.0.0.1:11434
+          python3 -m wealforge model                     # must detect, probe and answer
+          python3 -m wealforge score --out /tmp/scorecard.md >/dev/null
+          python3 -m wealforge pick --top 1 --build >/dev/null
+          # --bad-first plants one gate violation per section: the run below only
+          # passes if the draft → gate → repair loop actually converges.
+          python3 -m wealforge work --verbose --max-ideas 1 --sections 2 --out-dir out \
+            --allow-fail
+          python3 - <<'PY'
+          import pathlib, re
+          logs = sorted(pathlib.Path("out").glob("*/WORK-LOG.md"))
+          assert logs, "no work log written"
+          body = logs[0].read_text()
+          assert "Attempt history" in body, "the loop must document what it tried"
+          assert re.search(r"try1\(\d+w, [1-9]\d*e", body), "the stub should have caused a first-attempt failure"
+          assert "still failing after" not in body, "the repair loop did not converge — that is a real regression"
+          PY
+
+      - name: Quality floor on committed assets (measured, not admired)
+        run: |
+          python3 -m wealforge eval --self-check --out 00-strategy/decisions/05-EVAL-RESULTS.md
+          python3 - <<'PY'
+          import json, pathlib, sys
+          d = json.loads(pathlib.Path("00-strategy/decisions/05-EVAL-RESULTS.json").read_text())
+          rows = d["repo_grades"]
+          assert rows, "graded nothing — did the portfolio move?"
+          # Front/back matter (copyright, about the author, "also in this series") carries no
+          # numbers by design, so it is exempt from the specificity floor but NOT from the
+          # grade floor. Exemptions are listed, never silently dropped.
+          MATTER = ("-front-matter", "back-matter", "NOTES")
+          body = [r for r in rows if not any(k in r["file"] for k in MATTER)]
+          exempt = [r["file"] for r in rows if any(k in r["file"] for k in MATTER)]
+          mean = sum(r["score"] for r in rows) / len(rows)
+          errors = sum(r["gate_errors"] for r in rows)
+          cliches = sum(len(r["cliches"]) for r in rows)
+          nums = sum(r["numbers_per_100w"] for r in body) / max(len(body), 1)
+          thin = [r["file"] for r in body if r["numbers_per_100w"] < 0.4]
+          print(f"mean grade {mean:.1f} over {len(rows)} files ({len(body)} body, "
+                f"{len(exempt)} front/back matter exempt from the numbers floor)")
+          print(f"body numbers/100 words: {nums:.2f} · {errors} gate errors · {cliches} clichés")
+          for f in thin:
+              # Per-file thinness is a drafting note, not a compliance failure: warn, don't block.
+              print(f"::warning file={f}::under 0.4 numbers/100 words — worth more specifics in the next pass")
+          bad = []
+          if mean < 75:
+              bad.append(f"mean grade {mean:.1f} below the house floor of 75")
+          if errors:
+              bad.append(f"{errors} gate error(s) in committed assets")
+          if cliches > 1:
+              bad.append(f"{cliches} cliché hits — the voice card or the copy needs attention")
+          if nums < 0.6:
+              bad.append(f"body specificity collapsed to {nums:.2f} numbers/100 words (floor 0.6)")
+          if bad:
+              print("::error::" + "; ".join(bad)); sys.exit(1)
+          print("quality floor holds")
+          PY
+
+      - name: Loop — score, pick, brief, dataset, eval, report
         run: |
           FLAGS="--allow-fail --out-dir out"
-          if [ "$DRAFT" = "1" ] && [ -n "${ANTHROPIC_API_KEY:-}${OPENAI_API_KEY:-}" ]; then
-            FLAGS="$FLAGS --draft"; echo "drafting enabled via configured provider"
+          PAID=${WEALFORGE_ALLOW_PAID:-0}
+          if [ "$DRAFT" = "1" ] && [ -n "$ANTHROPIC_API_KEY$OPENAI_API_KEY" ] && [ "$PAID" = "1" ]; then
+            # Reaching here means an operator set a key AND WEALFORGE_ALLOW_PAID=1 as a repo
+            # *variable*. Both are needed: a cron holding a key is how a $0 project gets an invoice.
+            FLAGS="$FLAGS --with-model"; echo "drafting via the configured hosted provider"
           else
             echo "offline mode: briefs + math + gates only, no prose generated"
+            echo "  (drafting needs DRAFT + a key + WEALFORGE_ALLOW_PAID=1; the stub job above"
+            echo "   already proves the HTTP path, so nothing here depends on a paid call)"
           fi
           python3 -m wealforge run $FLAGS
 
@@ -75,17 +188,20 @@ jobs:
         with:
           script: |
             const { repo, owner } = context.repo;
-            const title = `Agent loop blocked: gate or tests failing (${new Date().toISOString().slice(0,10)})`;
-            const open = await github.rest.issues.listForRepo({ repo, owner, state: 'open', labels: 'agent-loop' });
-            if (open.data.some(i => i.title === title)) return;
+            const title = `Agent loop blocked: gate, eval or tests failing (${new Date().toISOString().slice(0,10)})`;
+            // One open issue at a time; it closes when a run goes green again.
+            const open = await github.rest.issues.listForRepo({ repo, owner, state: 'open', per_page: 50 });
+            // Dedupe on the prefix, not on a label: a repo without the label would 422 here and
+            // the CI failure you wanted to see would be replaced by one you did not.
+            if (open.data.some(i => (i.title || '').startsWith('Agent loop blocked:'))) return;
             await github.rest.issues.create({
               repo, owner, title,
-              labels: ['agent-loop'],
               body: 'The weekly loop could not complete. Nothing was published. Read the run log: '
                   + `https://github.com/${owner}/${repo}/actions/runs/${context.runId}\n\n`
-                  + 'The gate reports errors only for things with a documented fix. Fix the copy, not the rule,'
-                  + ' unless the rule is genuinely wrong for this asset — then override it in `config/gate_rules.json`'
-                  + ' and say why in the commit.'
+                  + 'The gate reports errors only for things with a documented fix, and the quality floor '
+                  + 'fails on measurable shape (no numbers, no next action, clichés). Fix the copy first. '
+                  + 'Change a rule only when the rule is genuinely wrong for this asset — then override it '
+                  + 'in `config/gate_rules.json` and say why in the commit.'
             });
 
       - name: Persist the ledger + decision artefacts
@@ -94,5 +210,5 @@ jobs:
           git config user.name  "wealthforge-agent"
           git config user.email "action@github.com"
           git add 00-strategy/decisions 2>/dev/null || git add -f 00-strategy/decisions
-          git diff --cached --quiet || git commit -m "agent loop: scorecard, selection, gate report $(date -u +%F)"
+          git diff --cached --quiet || git commit -m "agent loop: scorecard, model pick, corpus, eval $(date -u +%F)"
           git push || true
