@@ -40,7 +40,7 @@ jobs:
           pandoc manuscript.md \
             --from markdown+fancy_lists \
             --to epub3 \
-            --toc --toc-depth=1 --epub-chapter-level=1 \
+            --toc --toc-depth=1 --split-level=1 \
             --css=style.css \
             --metadata=lang:en-US \
             --metadata=title:"The Night Shift Reset" \

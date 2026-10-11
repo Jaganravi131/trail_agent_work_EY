@@ -22,11 +22,13 @@ mkdir -p "$OUT"
 } > manuscript.md
 
 # 2. EPUB for KDP ebook upload
+#     --split-level needs pandoc >= 3.1. On an older install, swap it for
+#     --epub-chapter-level=1 (same behaviour, deprecated name).
 pandoc manuscript.md \
   --from markdown+fancy_lists+east_asian_line_breaks \
   --to epub3 \
   --toc --toc-depth=1 \
-  --epub-chapter-level=1 \
+  --split-level=1 \
   --css=style.css \
   --metadata=lang:en-US \
   --metadata=title:"$TITLE" \
