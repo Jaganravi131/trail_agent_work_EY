@@ -58,7 +58,27 @@ jobs:
           python-version: '3.12'
 
       - name: Unit tests (stdlib unittest, nothing to install)
-        run: python3 -m unittest discover -s tests -q
+        # A failed run's raw log is not readable from here, so the useful lines go into an
+        # annotation, which is a structured API field. Failing test names + the traceback tail,
+        # not 400 lines of nothing. This also helps the human clicking through from an email.
+        run: |
+          set +e
+          python3 -m unittest discover -s tests -q >/tmp/tests.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/tests.log
+          if [ "$rc" -ne 0 ]; then
+            python3 - <<'PY'
+          import pathlib, re
+          t = pathlib.Path("/tmp/tests.log").read_text()
+          names = re.findall(r"^(?:FAIL|ERROR): (\S+)", t, re.M)
+          tail = "\n".join(t.splitlines()[-70:])
+          msg = f"{len(names)} failing: " + (", ".join(names[:8]) or "see tail") + " || " + tail
+          msg = msg.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print(f"::error::{msg}")
+          PY
+            exit "$rc"
+          fi
 
       - name: Gate every reader-facing asset (fails the build on an error)
         run: |
