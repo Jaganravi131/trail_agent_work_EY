@@ -1,0 +1,98 @@
+name: agent-loop
+
+# The unattended half of the operation: re-score, re-gate, report. On GitHub's
+# free runners this costs nothing and needs no secrets to be useful. If provider
+# keys are added as repo secrets later, DRAFT=1 makes it draft prose too — still
+# with a human in the loop before anything is published.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'          # Mondays 06:17 UTC — off the :00 crowd
+  push:
+    paths:
+      - 'wealforge/**'
+      - 'config/**'
+      - 'tests/**'
+      - '.github/workflows/agent.yml'
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: 'draft prose with a configured provider (needs secrets)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: agent-loop
+  cancel-in-progress: false
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      DRAFT: ${{ github.event.inputs.draft == 'true' && '1' || '0' }}
+      # Secrets are exposed as env vars only (never interpolated into a shell line,
+      # which is how keys end up in public logs). The job works without them: it
+      # scores, gates and reports, and simply skips the drafting step.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Unit tests (stdlib unittest, nothing to install)
+        run: python3 -m unittest discover -s tests -q
+
+      - name: Gate every reader-facing asset (fails the build on an error)
+        run: |
+          python3 -m wealforge gate 01-book --bundle
+          python3 -m wealforge gate 03-tool 04-seo --summary --out 00-strategy/decisions/gate-latest.md
+
+      - name: Self-gate the agent's own docs and tests
+        run: python3 -m wealforge gate wealforge/ tests/ config/ --summary --strict
+
+      - name: Loop — score, pick, brief, report
+        run: |
+          FLAGS="--allow-fail --out-dir out"
+          if [ "$DRAFT" = "1" ] && [ -n "${ANTHROPIC_API_KEY:-}${OPENAI_API_KEY:-}" ]; then
+            FLAGS="$FLAGS --draft"; echo "drafting enabled via configured provider"
+          else
+            echo "offline mode: briefs + math + gates only, no prose generated"
+          fi
+          python3 -m wealforge run $FLAGS
+
+      - name: Failing gate opens an issue, once
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo, owner } = context.repo;
+            const title = `Agent loop blocked: gate or tests failing (${new Date().toISOString().slice(0,10)})`;
+            const open = await github.rest.issues.listForRepo({ repo, owner, state: 'open', labels: 'agent-loop' });
+            if (open.data.some(i => i.title === title)) return;
+            await github.rest.issues.create({
+              repo, owner, title,
+              labels: ['agent-loop'],
+              body: 'The weekly loop could not complete. Nothing was published. Read the run log: '
+                  + `https://github.com/${owner}/${repo}/actions/runs/${context.runId}\n\n`
+                  + 'The gate reports errors only for things with a documented fix. Fix the copy, not the rule,'
+                  + ' unless the rule is genuinely wrong for this asset — then override it in `config/gate_rules.json`'
+                  + ' and say why in the commit.'
+            });
+
+      - name: Persist the ledger + decision artefacts
+        if: github.ref == 'refs/heads/main' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name  "wealthforge-agent"
+          git config user.email "action@github.com"
+          git add 00-strategy/decisions 2>/dev/null || git add -f 00-strategy/decisions
+          git diff --cached --quiet || git commit -m "agent loop: scorecard, selection, gate report $(date -u +%F)"
+          git push || true

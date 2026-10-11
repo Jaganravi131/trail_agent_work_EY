@@ -7,7 +7,7 @@ All figures USD. Assumptions stated so you can falsify them with real numbers in
 | Asset | Cost | Revenue mechanism | Live by |
 |---|---|---|---|
 | KDP ebook $3.99 | $0 | ~$2.70 net/sale + KENP page reads | day 3 |
-| KDP paperback $12.99 | $0 upfront, print-on-demand | ~$5.14 net/sale | day 3 |
+| KDP paperback $9.99 (or $12.99 if expanded to ~20k words) | $0 upfront, print-on-demand | ~$4.59 net/sale at 46pp; ~$5.40 at ~80pp/12.99 | day 3 |
 | Gumroad printable kit $9 | $0 | 90%+ minus Gumroad's ~10%+fees → ~$7.60 | day 12 |
 | Free web planner | $0 (GitHub Pages) | traffic, backlinks, email, book sales | day 1 |
 | Email list (Substack free) | $0 | sells book 2 and the kit | day 5 |

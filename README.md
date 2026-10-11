@@ -43,6 +43,44 @@ bash 01-book/build.sh            # needs pandoc locally
 ```
 or push and let `.github/workflows/build-book.yml` do it with the `pandoc/core:3` container, then download the `night-shift-reset-book-files` artifact — no local toolchain, no cost.
 
+## The agent itself — `wealforge/`
+
+Portfolio 001 above is what the loop *produced*. `wealforge/` is the loop, as software:
+stdlib-only Python, no dependencies, no server, no paid tool, no ability to spend money.
+
+```bash
+./wf score          # pre-screen 17 disqualifiers → score the pool → 00-strategy/decisions/
+./wf pick --build   # select top N; write brief + cover spec + KDP backend + calendar
+./wf gate 01-book --bundle    # compliance/integrity gate — exit 1 on any error
+./wf price --words 11566      # royalty bands, delivery fee, print cost, scenarios, traffic math
+./wf report         # trends → diagnosis tree → exactly ONE experiment to run
+./wf today          # this day's human actions from the 90-day schedule
+./wf run            # the whole loop (what CI runs weekly)
+python3 -m unittest discover -s tests -q     # 92 tests, no network
+```
+
+Twelve modules; `wealforge/README.md` has the architecture and the extension points. The
+load-bearing behaviours, all covered by tests:
+
+- **A stage machine that can't be skipped.** An asset cannot reach `gated` without a passing
+  gate report, or `ready` without a publish checklist. `briefed → gated` raises.
+- **Pre-screen before scoring.** Public-domain dumps, trademark characters, diagnosis/dosing
+  protocols, review-swap rings, scraping, income guarantees, paid-ads-dependent ideas are
+  rejected at scan time *with the reason in the ledger* — five such decoys sit in
+  `config/scan_seed.json` to prove the screen bites.
+- **Suppression is a feature.** Prose that *forbids* a behaviour is not flagged as committing it
+  (`never buy reviews` passes); `<!-- gate:allow R1 -->` suppresses one rule on one line; rules are
+  overridable in `config/gate_rules.json`; every suppression is counted in the report so a muzzled
+  rule stays visible.
+- **Bundle mode.** A book is one reader-facing work: the disclaimer in its front matter covers the
+  volume, while claim rules still run per chapter and findings keep their source filename.
+- **Offline is a mode, not a failure.** No provider configured ⇒ the agent writes briefs, math,
+  checklists and verdicts and *refuses to emit prose*, pointing at `--emit-prompt` instead.
+  A test asserts the offline path never opens a socket.
+
+`config/rubric.json` (weights), `config/scan_seed.json` (idea pool) and
+`config/schedule.json` (90-day plan) are the three files to edit when you disagree with it.
+
 ## Non-negotiables baked into these assets
 
 - **No invented credentials.** The author bio says the author is not a clinician, and it must stay that way. See `07-risks/01-integrity-and-compliance.md`.

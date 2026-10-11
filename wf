@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Zero-install entry point. No venv, no pip, no package to publish: the agent is
+# stdlib Python and the repo is the runtime.
+#
+#   ./wf score && ./wf pick --build && ./wf gate 01-book --bundle
+#
+set -euo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PY="${PYTHON:-}"
+if [ -z "$PY" ]; then
+  for c in python3.12 python3.11 python3 python; do
+    if command -v "$c" >/dev/null 2>&1; then PY="$c"; break; fi
+  done
+fi
+[ -n "$PY" ] || { echo "no python3 found" >&2; exit 127; }
+cd "$here"
+exec "$PY" -m wealforge "$@"

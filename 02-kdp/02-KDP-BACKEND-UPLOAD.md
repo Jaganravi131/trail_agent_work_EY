@@ -69,7 +69,7 @@ Deliberately absent: "insomnia cure", "cure", "bedtime hacks", trademarked terms
 | Format | Price | Royalty maths | Notes |
 |---|---|---|---|
 | Ebook, KDP Select enrolled | **$3.99** | 70% − delivery fee ≈ **$2.70/sale** | 70% band is $2.99–$9.99. A text-only ~170-page file: delivery fee typically ~$0.02–0.07 at the "no images" tier — verify in the app at upload. |
-| Paperback 6×9 | **$12.99** | 60% − print cost (≈$2.65 for ~170 B/W pages, US) ≈ **$5.14/sale** | Set list price; KDP shows minimum. Don't chase $8 paperback — it makes the ebook look overpriced and kills margin. |
+| Paperback 6×9 | **$9.99** | 11,566 words ≈ **46 print pages** at ~340 pp/page + matter → print cost ≈ $1.40; 60% − cost ≈ **$4.59/sale** | **Correction:** an earlier draft of this sheet assumed ~170 pages / $12.99 — that page count belongs to a 45k-word book, not this one. A ~46-page paperback at $12.99 is a refund magnet and a 1-star waiting to happen. Two honest options: (a) price the booklet at $7.99–9.99, or (b) expand the manuscript to ~20k words by putting the worksheets and two worked examples inline, which supports ~$12.99 honestly. `wf price --words N` computes this; run it after any expansion. |
 | Launch week (days 1–5) | **$0.99** | 35% ≈ $0.29/sale | 5 days, not 10. Goal is verified reviews + rank, not revenue. |
 | KDP Select free days | Days 12–13 and days 26–27 | $0 | Pushes you into "also bought" feeds. Give the ebook free twice; never more. |
 
@@ -84,7 +84,8 @@ Answering falsely in that declaration is a policy violation with an account-perm
 
 ## Manuscript formatting for upload
 
-1. EPUB built by `pandoc manuscript.md -o The-Night-Shift-Reset.epub` with a `style.css` (in `01-book/`) for headings, 1.15 line spacing, justified-off, and `page-break-before` on `h1`. Free; run it in the included GitHub Action if you have no local pandoc.
+1. Page count reality: this manuscript is ~11.6k words ≈ 46 print pages. For a paperback, expand to ~20k (worksheets + two full worked examples inline) or accept booklet pricing.
+2. EPUB built by `pandoc manuscript.md -o The-Night-Shift-Reset.epub` with a `style.css` (in `01-book/`) for headings, 1.15 line spacing, justified-off, and `page-break-before` on `h1`. Free; run it in the included GitHub Action if you have no local pandoc.
 2. Do **not** upload a `.docx` with manual page breaks and a TOC you typed by hand. Let KDP generate the TOC from heading styles, and let the ebook reflow.
 3. Fixed-layout only for the ASCII boxes in chapter 9 — if the art breaks on an e-ink preview, replace those boxes with a monospace-image PNG per page and set them as a "print replica" only for the paperback.
 4. Paperback: upload PDF (6×9, 0.5" margins, mirror, 11 pt serif, 1.3 leading), front matter with an ISBN-free KDP ISBN, no bleed.

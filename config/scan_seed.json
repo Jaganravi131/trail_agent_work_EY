@@ -1,0 +1,114 @@
+{
+  "note": "Portfolio 001 seed pool. Scores are the operator's, not defaults — the agent refuses to fill midpoints silently. Two deliberately poisoned entries are kept in the pool to prove the pre-screen works and to remind the operator that tempting ideas are the ones that need screening.",
+  "ideas": [
+    {
+      "title": "The Night Shift Reset",
+      "niche": "shift-worker recovery",
+      "platform": "kdp",
+      "audience": "nurses, EMTs, warehouse and overnight desk crews on 12h or 4-on-4-off rotations",
+      "thesis": "a named, number-bearing system for eating/caffeine/light timing that a tired person can run tonight",
+      "angles": ["mechanism book, not tips", "free web tool as the link magnet", "worksheets make it defensible"],
+      "competition": "medium",
+      "time_note": "first dollar weeks 2-6 with the launch push",
+      "series": "Overnight Systems",
+      "kicker": "THE 28-DAY SYSTEM",
+      "subtitle": "The 28-Day System for Eating, Caffeine and Light Timing for Nurses, EMTs, Warehouse and Overnight Desk Crews Who Are Wired at 8 a.m.",
+      "scores": {"feasibility": 5, "speed": 3, "defensibility": 4, "quality": 5, "compounding": 5}
+    },
+    {
+      "title": "Free single-file browser tools plus SEO mini-site",
+      "niche": "utilities that earn links",
+      "platform": "code",
+      "audience": "the same shift-worker reader, plus anyone searching for a thing that computes their thing",
+      "thesis": "tools people bookmark and link to; articles exist only to serve the tool",
+      "angles": ["zero hosting cost on Pages", "each tool is an also-bought for the next", "no ad network needed to be useful"],
+      "competition": "low",
+      "scores": {"feasibility": 5, "speed": 2, "defensibility": 5, "quality": 4, "compounding": 5}
+    },
+    {
+      "title": "Freelancer cash-flow dashboard pack",
+      "niche": "small business spreadsheets",
+      "platform": "digital-product",
+      "audience": "solo freelancers who hate bookkeeping",
+      "thesis": "a spreadsheet that replaces a £20/mo subscription",
+      "angles": ["impulse price", "instant delivery"],
+      "competition": "high",
+      "scores": {"feasibility": 5, "speed": 4, "defensibility": 2, "quality": 4, "compounding": 3}
+    },
+    {
+      "title": "Cozy mystery novella series",
+      "niche": "cozy mystery fiction",
+      "platform": "kdp",
+      "audience": "series readers in a hungry genre",
+      "thesis": "three books, one detective, series page does the selling",
+      "angles": ["series economics", "trope-forward positioning"],
+      "competition": "high",
+      "scores": {"feasibility": 4, "speed": 1, "defensibility": 3, "quality": 4, "compounding": 4}
+    },
+    {
+      "title": "Second-brain Notion template pack",
+      "niche": "productivity templates",
+      "platform": "digital-product",
+      "audience": "knowledge workers",
+      "thesis": "a template with a distinctive method",
+      "angles": ["fast to build"],
+      "competition": "high",
+      "scores": {"feasibility": 5, "speed": 3, "defensibility": 1, "quality": 3, "compounding": 3}
+    },
+    {
+      "title": "Air fryer meal prep for busy people",
+      "niche": "cookbooks",
+      "platform": "kdp",
+      "audience": "everyone",
+      "thesis": "another recipe book in the most saturated category on Amazon",
+      "angles": ["volume play"],
+      "competition": "high",
+      "scores": {"feasibility": 5, "speed": 3, "defensibility": 1, "quality": 2, "compounding": 2}
+    },
+    {
+      "title": "Public domain classic, unabridged reprint with a new cover",
+      "niche": "reprints",
+      "platform": "kdp",
+      "audience": "nobody in particular",
+      "thesis": "republish a free book and charge for it",
+      "angles": ["zero writing required"],
+      "scores": {"feasibility": 5, "speed": 3, "defensibility": 1, "quality": 1, "compounding": 1}
+    },
+    {
+      "title": "Bulk 120-prompt journal mill: 1,000 low-content titles",
+      "niche": "low-content",
+      "platform": "kdp",
+      "audience": "the category is the audience",
+      "thesis": "generate 1000 books per week with a script and let the long tail catch something",
+      "angles": ["scale over quality"],
+      "scores": {"feasibility": 5, "speed": 4, "defensibility": 1, "quality": 1, "compounding": 2}
+    },
+    {
+      "title": "Seed 5-star reviews with a review swap group, then upvote our own Reddit posts",
+      "niche": "growth",
+      "platform": "audience",
+      "audience": "shoppers who trust stars",
+      "thesis": "manufacture the social proof we haven't earned",
+      "angles": ["faster than asking honestly"],
+      "scores": {"feasibility": 5, "speed": 5, "defensibility": 1, "quality": 1, "compounding": 1}
+    },
+    {
+      "title": "Scrape Amazon reviews for keyword gold, bypass the rate limiter",
+      "niche": "research",
+      "platform": "seo-site",
+      "audience": "whoever reads the resulting page",
+      "thesis": "extract competitor data at scale and republish the complaints as FAQs",
+      "angles": ["better than guessing demand"],
+      "scores": {"feasibility": 4, "speed": 4, "defensibility": 2, "quality": 3, "compounding": 2}
+    },
+    {
+      "title": "Melatonin dosing protocol to cure shift work sleep disorder",
+      "niche": "sleep",
+      "platform": "kdp",
+      "audience": "exhausted night workers",
+      "thesis": "a precise supplement schedule that treats the condition",
+      "angles": ["people want a dose, not a system"],
+      "scores": {"feasibility": 5, "speed": 3, "defensibility": 2, "quality": 3, "compounding": 2}
+    }
+  ]
+}

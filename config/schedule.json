@@ -1,0 +1,60 @@
+{
+  "note": "The 90-day human schedule. Day numbers are relative to `wf roadmap` (which writes .wealforge/start.txt). Every task here is something a person must do — accounts, uploads, judgement. Edit freely; `wf today` reads this file.",
+  "phases": [
+    {
+      "name": "ship",
+      "days": [1, 7],
+      "goal": "Assets live and reachable",
+      "tasks": {
+        "1": ["Serve/commit the free tool; put the real URL into its canonical + CTA",
+              "wf gate 03-tool/ 04-seo/ → zero errors",
+              "Fact-check pass: verify every number and citation against a primary source today"],
+        "2": ["Cover built from the brief; thumbnail test against a real results page",
+              "Create the marketplace account — identity verification takes ~24h, start now"],
+        "3": ["Author profile + email publication + digital-product store, same handle everywhere",
+              "Upload ebook; answer the AI-content declaration truthfully; price from `wf price`"],
+        "4": ["Paperback via the digital proof ($0) and approve it", "Publish the pillar articles with internal links"],
+        "5": ["Submit sitemap to Search Console and Bing (both free)",
+              "wf score so the ledger holds today's ranking, not last month's"],
+        "6": ["Day-1 calendar post: tool first, sell second"],
+        "7": ["Fill the tracker even with zeros — the week of zeros is the baseline later diagnosis needs"]
+      }
+    },
+    {
+      "name": "proof",
+      "days": [8, 21],
+      "goal": "Evidence strangers care: 10 reviews, 50 tool visits/week",
+      "tasks": {
+        "10": ["Format the low-content kit from the existing worksheets (a formatting job, not a writing job)"],
+        "12": ["List the kit; add the book-owner discount line"],
+        "14": ["Step price up to list, announced with the reason"],
+        "16": ["Ten personal review asks, individually, no conditions attached"],
+        "19": ["Reply to every review including the critical ones; no defensiveness"],
+        "21": ["wf report → read the diagnosis before touching anything"]
+      }
+    },
+    {
+      "name": "distribute",
+      "days": [22, 45],
+      "goal": "Two channels working, not twenty tried",
+      "tasks": {
+        "24": ["Five community replies at full quality, no links unless asked"],
+        "27": ["Free-promo window on the ebook if enrolled in the 90-day exclusivity programme"],
+        "30": ["One PDF flyer to training coordinators / staff reps / department libraries"],
+        "35": ["wf report; run exactly one experiment for 14 days"],
+        "45": ["Decision gate: keep / repackage / pivot, using `wf report` output rather than a feeling"]
+      }
+    },
+    {
+      "name": "compound",
+      "days": [46, 90],
+      "goal": "Second asset at ~20% of the first one's cost",
+      "tasks": {
+        "50": ["wf pick on the scored ledger → the next asset is chosen by the rubric, not by boredom"],
+        "60": ["Draft asset 2 with wf build; the gate is the same gate"],
+        "75": ["Bundle both assets; raise the low-price product to a system price"],
+        "90": ["Full review: revenue vs the model, hours invested per dollar, and one pivot decision"]
+      }
+    }
+  ]
+}

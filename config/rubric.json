@@ -1,0 +1,19 @@
+{
+  "version": "1",
+  "top_n": 2,
+  "min_total": 70.0,
+  "tie_break": ["speed", "defensibility", "quality"],
+  "notes": "Weighted 1-5 axes normalised to 100. Weights encode the operating constraint: zero capital makes feasibility and defensibility worth more than speed, because a cheap idea that anyone can copy is not an asset.",
+  "axes": [
+    {"key": "feasibility", "label": "Feasibility at $0", "weight": 3,
+     "guide": "5 = genuinely free to ship (no ads, no inventory, no paid tool, free tier hosting). 1 = needs capital."},
+    {"key": "speed", "label": "Time to first dollar", "weight": 2,
+     "guide": "5 = plausible sale inside 30 days. 1 = 6+ months before revenue is meaningful."},
+    {"key": "defensibility", "label": "Defensibility", "weight": 3,
+     "guide": "5 = a lazy competitor cannot clone it in an afternoon (proprietary mechanism, tool, audience). 1 = one prompt does it."},
+    {"key": "quality", "label": "Output quality vs. average human in niche", "weight": 2,
+     "guide": "5 = a practitioner would call it good. 1 = generic listicle. If this can't reach 4, don't pick it."},
+    {"key": "compounding", "label": "Compounding / scalability", "weight": 2,
+     "guide": "5 = asset #1 makes asset #20 materially cheaper (shared audience, list, pipeline, tooling)."}
+  ]
+}
