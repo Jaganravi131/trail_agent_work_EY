@@ -86,21 +86,32 @@ A field that fails validation is reported; it is never quietly filled.
 ## 3. Fine-tuning: the honest version
 
 **Do it only when the corpus says so.** `./wf dataset` builds the corpus and prints a
-recommendation with a floor (`MIN_SFT_EXAMPLES = 150`, `MIN_DPO_PAIRS = 40`). On the
-current repo it says:
+recommendation with a floor (`MIN_SFT_EXAMPLES = 150`, `MIN_DPO_PAIRS = 40`). What it
+prints right now (it moves with every asset, so treat the numbers as today's, not the
+mechanism's):
 
 ```
-fine-tune recommendation: NOT YET — 74 SFT examples and 0 preference pairs is below
+fine-tune recommendation: NOT YET — 92 SFT examples and 0 preference pairs is below
 the floor (150/40). A LoRA on this would mostly learn to imitate formatting while
 degrading instruction-following, and you would have no way to tell the difference at
 40 examples.
 ```
 
+Two things that number means, and one it doesn't. It means the corpus is 92 gate-passing
+sections, 58 short of the floor. It means DPO is empty because preference pairs need a
+model draft *and* the human-corrected final for the same section, and nothing has been
+through that loop yet — that is the reason the DPO half is 0, not a filter to relax. It
+does **not** mean the training plan is premature in kind: `wf finetune` still writes
+`training/`, because the plan is the deliverable and the numbers are what gate it.
+
 That is the correct answer, and shipping a training run that the data does not support
 would be the kind of move this whole repo exists to prevent.
 
 **What the corpus is.** `wealforge/dataset.py` splits committed, **gate-passing** assets
-into sections and writes ShareGPT rows. Eligibility fails closed: a file that trips the
+into sections and writes ShareGPT rows. The include list is `01-book/chapters/*.md`
+and `04-seo/articles/*.md`, deliberately: `04-seo/pages/` holds the about and
+editorial-policy copy, which is a legal surface rather than a style exemplar, and mixing
+it in would teach an adapter to write disclaimers instead of sections. Eligibility fails closed: a file that trips the
 gate is excluded and counted (`dataset/excluded.json`, with rule ids), and if
 `config/approval.json` has entries then only content-hash-matching, operator-signed files
 are admitted — edit a file after sign-off and it drops out of the corpus rather than

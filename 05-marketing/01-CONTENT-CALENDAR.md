@@ -84,6 +84,42 @@ Ten people who engaged with anything above, individually, no mass DM: `Hey — I
 
 ---
 
+## Extra — the two pages that shipped early (use them in week 1, not week 4)
+
+`/nap-before-shift/` and `/4-on-4-off-sleep/` are written and gated already, along with `/about/`
+and `/editorial-policy/`. That means the calendar above can start earning links on day one
+instead of day 22. Three posts to run with them, same rules as everything else here:
+
+**A1 · Reddit · r/nursing or r/EMT, value-only, no link**
+Title: `The nap length matters more than the nap time — and 45 minutes is the worst option`
+Body: the 20 / 90 / 30–60 table from art. 04 in your own words, plus the one-line reason
+(sleep inertia if the alarm lands mid-deep-sleep). Close with: `I put the arithmetic in a free
+calculator — say the word if you want the link and I'll drop it in a comment, I don't want to
+break sub rules.` Nothing else. The technique is the post; the link lives in a comment someone
+asks for.
+
+**A2 · LinkedIn · the roster post**
+> 4 on, 4 off is one of the better night patterns a person can get, and most people still wreck
+> it — in the first 24 hours off, not during the nights.
+> The block is the unit. Night 4's drive home and day 8's first shift are the two handovers, and
+> they decide whether you get four real days off or four days of recovering.
+> The fix is boring and specific: sleep the full block after night 4, don't "push through to be
+> normal by Saturday", and put the one thing you actually want to do on day 6 or 7 — not day 5.
+
+**A3 · Newsletter #1 (move it up from D14)**
+Subject: `The 20-minute nap, the 90-minute nap, and when neither works`. Body: art. 04's table of
+times for a 19:00 start + one honest line that six hours is not plenty, it's repeatable. One CTA:
+the planner. The `/about/` page in the footer, because the first week is when a reader decides
+whether this is a person or a content farm — and the `/editorial-policy/` link next to it is what
+makes "no invented credentials" checkable rather than asserted.
+
+One caution while you're at it: `/4-on-4-off-sleep/` talks about asking a scheduler for forward
+rotation. That's ordinary workplace advocacy, but if the operator reading this has a real
+scheduling problem tied to a diagnosis, the route is occupational health or the union rep, not a
+LinkedIn post — say so in the comments rather than improvising advice.
+
+---
+
 ## Rules for the whole month
 
 - Same handle everywhere, same one-line bio, same headshot or monogram. Discoverability across platforms is free and most people skip it.

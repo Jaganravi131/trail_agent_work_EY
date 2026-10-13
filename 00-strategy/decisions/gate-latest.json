@@ -14,7 +14,7 @@
  {
   "target": "04-seo/01-KEYWORD-MAP.md",
   "passed": true,
-  "words": 871,
+  "words": 986,
   "audience": "internal",
   "errors": 0,
   "warnings": 0,
@@ -27,7 +27,7 @@
  {
   "target": "04-seo/articles/01-sleep-after-night-shift.md",
   "passed": true,
-  "words": 1963,
+  "words": 1989,
   "audience": "reader",
   "errors": 0,
   "warnings": 0,
@@ -52,6 +52,52 @@
   "errors": 0,
   "warnings": 0,
   "stats": {},
+  "findings": []
+ },
+ {
+  "target": "04-seo/articles/04-nap-before-shift.md",
+  "passed": true,
+  "words": 1893,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {},
+  "findings": []
+ },
+ {
+  "target": "04-seo/articles/05-4-on-4-off-sleep.md",
+  "passed": true,
+  "words": 1888,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {},
+  "findings": []
+ },
+ {
+  "target": "04-seo/pages/01-about.md",
+  "passed": true,
+  "words": 576,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {
+   "negated:H1": 1,
+   "negated:X1": 1
+  },
+  "findings": []
+ },
+ {
+  "target": "04-seo/pages/02-editorial-policy.md",
+  "passed": true,
+  "words": 775,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {
+   "negated:M1": 1,
+   "negated:X1": 1
+  },
   "findings": []
  }
 ]

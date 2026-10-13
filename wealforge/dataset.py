@@ -328,7 +328,8 @@ def card_markdown(res: BuildResult, fmt: str, n_train: int, n_val: int) -> str:
     for s in res.stats["sources"]:
         lines.append(f"| `{s}` | gate-passing, operator-approved |")
     lines += ["", "## Known limits", "",
-              "- Style and structure transfer. Facts do not: this corpus is ~1 book and 3 articles, so "
+              f"- Style and structure transfer. Facts do not: this corpus is {len(res.stats['sources'])} "
+              f"files of one niche's prose, so "
               "any factual recall the base model had is untouched and any hallucination is still there.",
               "- Single-niche vocabulary (shift-work recovery). A tuned adapter will not generalise to "
               "another niche; expect to re-tune per portfolio, or keep the prompt path for breadth.",

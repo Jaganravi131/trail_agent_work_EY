@@ -96,4 +96,6 @@ And the rule that overrides everything here: **never drive when you're drowsy.**
 
 *This article is educational. It is not medical advice and doesn't diagnose, treat or prevent any condition. It's also not occupational-safety advice; if any timing suggestion conflicts with your employer's protocol, the protocol wins.*
 
-**Next:** [the free planner](/planner/) to get your own times, then [the book](/book/) if you want the full 28-day calibration with the log.
+**Next:** [how much sleep to get *before* the shift](/nap-before-shift/) — it is the other half of
+this problem and most people get the nap length wrong — then [the free planner](/planner/) to get
+your own times, then [the book](/book/) if you want the full 28-day calibration with the log.

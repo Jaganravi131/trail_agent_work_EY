@@ -14,9 +14,9 @@ A new domain cannot win "shift work sleep disorder" (domain authority + medical 
 | **T2 the money zone** | | | | |
 | T2 | how to sleep after a night shift | **low-med** | urgent how-to | **art. 01** |
 | T2 | how much caffeine is too much in a day | low-med | informational | art. 03 §1 |
-| T2 | should I nap before a night shift | **low** | decision | art. 02 §2 |
+| T2 | should I nap before a night shift | **low** | decision | **art. 04** (/nap-before-shift/) |
 | T2 | what to eat on a night shift | low-med | how-to | **art. 02** |
-| T2 | 4 on 4 off sleep schedule | **low** | specific rota | art. 03 |
+| T2 | 4 on 4 off sleep schedule | **low** | specific rota | **art. 05** (/4-on-4-off-sleep/) |
 | T2 | why can't I sleep after night shift | low | problem | art. 01 §1 |
 | T2 | is it bad to drink coffee at 4am | low | permission | art. 03 §2 |
 | T3 long-tail — instant wins, low volume, high conversion | | | | |
@@ -25,6 +25,11 @@ A new domain cannot win "shift work sleep disorder" (domain authority + medical 
 | T3 | can i drink coffee after midnight shift | low | permission | art. 03 |
 | T3 | night shift meal prep no microwave | **very low** | commercial how-to | art. 02 §5 |
 | T3 | 12 hour shift schedule health effects | low-med | informational | art. 01 §1 (defensible, cited) |
+| T3 | 90 minute nap before a shift | **very low** | how-to | art. 04 §3 |
+| T3 | sleep inertia after a nap | low | mechanism | art. 04 §2 (the 30–60 min trap) |
+| T3 | 3 on 3 off night shift sleep | low | specific rota | art. 05 §the eight days (same arithmetic, different block) |
+| T3 | forward vs backward shift rotation | low | mechanism | art. 05 §rotation direction |
+| T3 | is 4 on 4 off better than 5 on 2 off | low | comparison | art. 05 §three schedules |
 | T3 | best earplugs for day sleeping | low | commercial | art. 01 §4 |
 | T3 | how to get out of night shift schedule | very low | decision | art. 03 §4 (the rota script) |
 | T3 | night shift depression what to do | medium, YMYL | help-seeking | *not* monetised; signpost to clinicians |
@@ -42,14 +47,15 @@ shiftreset.tools/
 ├── /sleep-after-night-shift/        article 01  (pillar)
 ├── /what-to-eat-on-a-night-shift/   article 02  (pillar)
 ├── /caffeine-on-night-shift/        article 03  (pillar)
-├── /4-on-4-off-sleep/               batch 2
+├── /4-on-4-off-sleep/               **shipped 2026-10-13** (was batch 2)
 ├── /blackout-curtains-eye-mask/     batch 2  (affiliate disclosure)
 ├── /earplugs-day-sleeping/          batch 2
 ├── /no-microwave-meal-prep/         batch 2
 ├── /days-off-reset/                 batch 2
-├── /nap-before-shift/               batch 3
+├── /nap-before-shift/               **shipped 2026-10-13** (was batch 3)
 ├── /book/                           single sales page → Amazon
-└── /about/ + /editorial-policy/     E-E-A-T: who wrote it, what this isn't
+└── /about/ + /editorial-policy/     **shipped 2026-10-13** — E-E-A-T: who wrote it, what
+    this isn't, and the corrections table that has to stay visible
 ```
 
 12 pages, then re-evaluate. Not 60. A 60-page thin site in 2026 is a negative signal, and it's also 60 hours you'll never get back.
@@ -77,9 +83,9 @@ Every pillar links to **two** other pillars + the tool + /book/. The tool links 
 
 | Week | Ships |
 |---|---|
-| 1 | Tool live, 3 pillars live, /about/, /editorial-policy/ |
+| 1 | Tool live, 3 pillars live, /about/, /editorial-policy/ — **the last two shipped early, see `04-seo/pages/`** |
 | 2 | 4 batch-2 pages, backlink outreach to 10 free/no-cost places |
 | 3 | 4 more pages, first 5 Reddit/LinkedIn value posts |
-| 4 | /nap-before-shift, 1 email, review-the-numbers pass + fix the weakest 2 pages |
+| 4 | /nap-before-shift/ and /4-on-4-off-sleep/ — already shipped, so spend this week on the review-the-numbers pass and fixing the weakest 2 pages instead |
 
 Weeks 5–12: one pillar-quality page per week, plus the weekly social rhythm. If a page hasn't earned a click in 8 weeks, rewrite its title and first 200 words before writing anything new.

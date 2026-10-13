@@ -42,7 +42,12 @@ CLICHE = re.compile(
 #: offering a choice. Mid-sentence it is usually plain, good prose ("you'll know whether you're
 #: a 4-hour or a 6-hour person"), and flagging that is how a detector gets muted.
 CLICHE_LISTICLE = re.compile(r"(?:^|[.!?]\s+[#>*\-\s]*)[Ww]hether you['’]?re a\b[^.\n]{0,60}\bor\b")
-NUMERIC = re.compile(r"\b\d+(?:[.,]\d+)?\s?(?:%|percent|mg|g|kg|hours?|hrs?|min(?:utes?)?|days?|weeks?|"
+#: A number counts as specificity when it carries a unit a reader could act on. The unit set
+#: grew to include degrees, grams, kcal, ml and cups because this corpus writes room temperature,
+#: portion sizes and coffee volumes — a grader blind to "18–20 °C" undercounts precisely the copy
+#: that follows the house rule about a cool room, which is how a checker starts getting ignored.
+NUMERIC = re.compile(r"\b\d+(?:[.,]\d+)?\s?(?:%|percent|mg|g|kg|°?[cf]\b|kcal|kilocalories?|calories?|"
+                     r"cups?|oz|servings?|ml|lit(?:er|re)s?|grams?|hours?|hrs?|min(?:utes?)?|days?|weeks?|"
                      r"words?|pages?|reps?|units?|\$)|\$?\b\d{1,3}(?:,\d{3})+\b", re.I)
 SECOND_PERSON = re.compile(r"\b(you|your|you['’]re|yourself)\b", re.I)
 HEDGE = re.compile(r"\b(may|might|could|some research|suggests|generally|typically|often|many people|"

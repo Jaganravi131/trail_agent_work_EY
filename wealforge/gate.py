@@ -149,7 +149,7 @@ TEMPLATE_SLOP = re.compile(
 #: within a week, which is worse than no gate. So a match within this distance of a
 #: prohibition marker is reported only if nothing in the sentence permits it.
 NEGATION = re.compile(
-    r"(^\s*[-*>]?\s*no\s|\bnever\b|\bdo not\b|\bdon'?t\b|\bavoid\b|\bno\s+(fake|paid|bought|incentivis|mass)|"
+    r"(^\s*[-*>]?\s*no\s|^\s*[-*>+]?\s*(?:nothing|nobody|no one|none of (?:it|this))\b|\bnever\b|\bdo not\b|\bdon'?t\b|\bavoid\b|\bno\s+(fake|paid|bought|incentivis|mass)|"
     r"\bnot\s+allowed\b|\bforbidden\b|\bprohibit\w*|\binstead of\b|\bwon'?t\b|\bmust not\b|"
     r"\bisn'?t\b|\bcannot\b|\brule against\b|\bagainst the rules\b|\bbanned\b|\bremoved\b|"
     r"\bfail(?:s|ure)? (?:to|when)|\bviolation\b|\btakedown\b|\bgets? you (?:banned|removed)|"
@@ -159,6 +159,12 @@ NEGATION = re.compile(
     r"|\bwhat (gets|leads|causes)\b|\bconsequen\w+\b|\bwe (do not|don'?t|never)\b|\brule against\b)",
     re.I)
 NEGATION_WINDOW = 160   # risk-narration sentences are long by nature
+
+#: A denial is only read as a denial when it *opens* the sentence or bullet — "No scraping of
+#: Amazon" and "Nothing was scraped from a competitor's listing" both clear; "Nothing stops you
+#: scraping Amazon" would too, which is a deliberate trade: the anchored form is how compliance
+#: prose actually reads, and the gate's job is prose it can trust, not prose it can't fool.
+#: The same asymmetry the whole suppression layer uses: negation before the match, never after.
 
 #: `<!-- gate:allow R1 -->` / `# gate:allow R1` suppresses one rule on one line.
 ALLOW = re.compile(r"gate:allow\s+([A-Z][A-Za-z0-9]*(?:\s+[A-Z][A-Za-z0-9]*)*)")

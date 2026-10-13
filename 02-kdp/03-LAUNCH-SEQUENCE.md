@@ -62,4 +62,4 @@ Fill the tracker for four consecutive weeks. Then, and only then, run `07-risks/
 - Never buy ads to "validate" the book. Free distribution validated it, or nothing did.
 - Never chase a rank. Ranks are an output of the four things above; watching them is how people quit at day 34.
 - KENP page reads are ~40% of ebook income for a Select-enrolled short nonfiction title. If yours are lower, the sample and chapter 1 are the suspects, in that order — not the price.
-- Every asset in this repo stays free to readers except the book and the kit. The tool, all 30 posts, and all three articles are the funnel, and a funnel you charge for is a wall.
+- Every asset in this repo stays free to readers except the book and the kit. The tool, all 30 posts, the 5 articles and the 2 site pages are the funnel, and a funnel you charge for is a wall.

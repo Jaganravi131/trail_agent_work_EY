@@ -177,6 +177,29 @@ class TestGate(unittest.TestCase):
         self.assertEqual([], [f.rule_id for f in rep.findings])
         self.assertTrue(any(k.startswith("negated:") for k in rep.stats), "suppression should be visible")
 
+    def test_a_past_tense_denial_is_not_a_violation(self):
+        # Originality statements in this repo's own policy pages say things like "nothing was
+        # scraped". A gate that flags a denial as the act it denies gets muted within a week, so
+        # the negation set reads sentence-initial denials — "Nothing was scraped from a
+        # competitor's listing" — exactly the way it reads "No scraping of competitor listings".
+        denial = ("Everything here is original writing. Nothing was scraped from a competitor's "
+                  "listing, a review corpus or a book. Nobody bought a review. No one upvoted a "
+                  "thread from a second account.")
+        rep = gate.evaluate_text(denial, "04-seo/pages/editorial.md")
+        self.assertEqual([], [f.rule_id for f in rep.findings],
+                           f"a denial must not be reported as the thing it denies: {rep.errors}")
+
+    def test_the_trade_this_makes_is_documented_not_sneaky(self):
+        # Known limit, asserted so it stays a decision rather than a hole: a sentence that opens
+        # with a denial and then states a live instruction is read as a denial, because the guard
+        # only reads backwards from the match (asymmetry is what keeps the real violations
+        # firing — see the "negation after the match does not count" case in test_models.py).
+        # If a document ever needs to say "nothing stops you scraping X", it must be reworded.
+        loophole = "Nothing stops you scraping Amazon reviews once the pattern is down."
+        rep = gate.evaluate_text(loophole, "x/g.md")
+        self.assertEqual([], [f.rule_id for f in rep.findings],
+                         "this is the accepted cost of the anchored-denial rule")
+
     def test_disclaimed_credentials_pass_but_fabricated_ones_fail(self):
         bad = "About the Author: Jane Doe is a board-certified sleep specialist and registered nurse (RN)."
         self.assertIn("H1b", {f.rule_id for f in gate.evaluate_text(bad, "x/bio.md", audience="reader").findings})
