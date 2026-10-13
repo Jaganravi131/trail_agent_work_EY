@@ -13,7 +13,7 @@ from peft import LoraConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from trl import DPOConfig, DPOTrainer
 
-BASE = "Qwen/Qwen3.6-8B"
+BASE = "qwen3.6-8b"
 MIN_PAIRS = 40
 
 raw = load_dataset("json", data_files={"pairs": "dataset/dpo.jsonl"})

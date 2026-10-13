@@ -275,6 +275,7 @@ def work_idea(store: Any, idea: dict[str, Any], provider: llm.Provider,
     body: list[str] = []
     res = WorkResult(idea=idea["title"], slug=slug, sections=[], provider=provider.mode,
                      model=provider.model)
+    offline_note = ""
     for sec in sections:
         text, rec, tokens = draft_section(provider, brief, sec, word_target=word_target,
                                          max_attempts=max_attempts, log=_log)
@@ -283,17 +284,32 @@ def work_idea(store: Any, idea: dict[str, Any], provider: llm.Provider,
         if text:
             target.write_text(text + "\n", encoding="utf-8")
             rec.path = str(target)
+            body.append(text)
         elif not provider.available:
-            target.write_text(f"## {sec}\n\n{generator.TODO} — "
-                              f"no model reachable. Use `wf build --emit-prompt` and paste into any chat "
-                              f"UI, or pull a model: `wf model --select`.\n", encoding="utf-8")
+            hint = (f"no model reachable. Use `wf build --emit-prompt` and paste into any chat "
+                    f"UI, or pull a model: `wf model --select`.")
+            target.write_text(f"## {sec}\n\n{generator.TODO} — {hint}\n", encoding="utf-8")
             rec.path = str(target)
-        body.append(text or f"## {sec}\n\nTODO(human)\n")
+            body.append(f"## {sec}\n\n{generator.TODO} — {hint}\n")
+            # The assembled draft is the file a human actually opens, so it has to say why it is
+            # empty. A bare "TODO(human)" inside an otherwise confident document is how a
+            # placeholder gets pasted into a CMS by someone in a hurry.
+            offline_note = ("> **Not drafted — no model was reachable.** Each section below is a "
+                            "brief, not prose.\n>\n> Two free ways to turn it into a draft: run a "
+                            "local model (`wf model --select`\n> picks one that fits the hardware you "
+                            "have, `ollama pull` it, then `wf work --verbose`),\n> or copy the prompts "
+                            "out (`wf build --emit-prompt`), paste them into any chat UI, and bring"
+                            "\n> the answers back with `--from-file`. The gate runs either way, and "
+                            "no stage advances\n> until it passes.\n\n")
+        else:
+            body.append(f"## {sec}\n\n{generator.TODO}\n")
         res.sections.append(rec)
         res.total_tokens += tokens
         res.total_words += rec.words
 
     draft_md = "\n\n".join(body).strip() + "\n"
+    if offline_note:
+        draft_md = offline_note + draft_md
     (outdir / "draft" / "ASSET-DRAFT.md").write_text(draft_md, encoding="utf-8")
     rep = gate_mod.evaluate_text(draft_md, str(outdir / "draft/ASSET-DRAFT.md"))
     res.gate_errors, res.gate_warnings = len(rep.errors), len(rep.warnings)

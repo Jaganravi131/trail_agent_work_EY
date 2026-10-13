@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-10-11T18:43:36Z",
-  "base_model": "Qwen/Qwen3.6-8B",
+  "generated_utc": "2026-10-13T14:18:16Z",
+  "base_model": "qwen3.6-8b",
   "method": "QLoRA (4-bit NF4 base + LoRA adapters)",
   "chat_template": "chatml",
   "dataset": {
@@ -12,7 +12,7 @@
     "dpo_pairs": 0
   },
   "hyperparameters": {
-    "base_model": "Qwen/Qwen3.6-8B",
+    "base_model": "qwen3.6-8b",
     "method": "QLoRA (4-bit NF4 base + LoRA adapters)",
     "r": 16,
     "alpha": 16,

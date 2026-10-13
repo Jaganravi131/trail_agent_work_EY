@@ -87,7 +87,11 @@ python3 -m unittest discover -s tests -q     # 158 tests, no network
 
 **5. A checker that cries wolf gets muted, so wolf-crying is a bug.** This applies to the eval harness as much as the gate: narration *about* a risk is not the risk, prose *quoting* a bad credential inside `**Not** "…"` is not a claim, `~~struck-through~~` rejected ideas are not live advice, a book's chapters are not individually missing the disclaimer that sits in its front matter, and a refusal that quotes the request ("I can't write \"you'll earn $500\"") is a *pass*. Each of those was a real false alarm in this repo's own files; each is now a test in `tests/test_models.py` in both directions — must-fire and must-pass — because a harness that only tests the catching half drifts into noise.
 
-**6. Offline is a mode, not a failure.** With no provider configured, `--draft` writes `draft/HOW-TO.md` explaining the two free paths and *does not emit prose*. A `--emit-prompt` / `--from-file` round trip keeps provenance in the ledger. Nothing pretends.
+**6. Offline is a mode, not a failure.** With no provider configured, `--draft` writes
+`draft/HOW-TO.md` explaining the two free paths and *does not emit prose*; the assembled
+`ASSET-DRAFT.md` opens with a blockquote saying it is not drafted and naming the two ways to
+fix that, because the file a human opens is the file that has to tell the truth. A
+`--emit-prompt` / `--from-file` round trip keeps provenance in the ledger. Nothing pretends.
 
 ## Extension points
 

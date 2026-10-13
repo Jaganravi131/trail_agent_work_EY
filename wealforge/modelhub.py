@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -181,10 +182,12 @@ def detect_vram_gb() -> float:
     except Exception:
         pass
     try:
-        out = os.popen("nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null") \
-              .read().strip().splitlines()
-        if out and out[0].isdigit():
-            return round(int(out[0]) / 1024, 1)
+        r = subprocess.run(["nvidia-smi", "--query-gpu=memory.total",
+                            "--format=csv,noheader,nounits"],
+                           capture_output=True, text=True, timeout=3)
+        first = (r.stdout or "").strip().splitlines()
+        if first and first[0].isdigit():
+            return round(int(first[0]) / 1024, 1)
     except Exception:
         pass
     try:

@@ -350,11 +350,17 @@ class PipelineTests(StubServer):
             self.assertEqual(res.total_words, 0)
             self.assertFalse(res.fully_generated)
             draft = Path(d) / "out" / res.slug / "draft"
-            files = list(draft.glob("*.md"))
-            self.assertEqual(len(files), 3, "2 sections + assembled draft")
-            body = files[0].read_text(encoding="utf-8")
+            names = {f.name for f in draft.glob("*.md")}
+            self.assertEqual(len(names), 3, "2 sections + assembled draft")
+            # Named files, never glob order: `Path.glob` has no promised ordering, and an
+            # assertion that reads files[0] passes on one filesystem and fails on the runner.
+            body = (draft / "answer-the-question-in-3-sentences.md").read_text(encoding="utf-8")
             self.assertIn("TODO(human)", body, "a placeholder must be unmistakable")
             self.assertIn("wf model --select", body, "and must carry the instruction to fix it")
+            assembled = (draft / "ASSET-DRAFT.md").read_text(encoding="utf-8")
+            self.assertIn("Not drafted", assembled, "the file a human opens must say why it is empty")
+            self.assertIn("wf build --emit-prompt", assembled)
+            self.assertNotIn("I recommend", assembled, "an offline draft must not invent prose")
 
     def test_a_clean_run_walks_the_stage_ladder_instead_of_refusing_it(self):
         # Regression: with a fresh ledger the asset row is born at "briefed", and a run that
@@ -651,6 +657,28 @@ class FinetuneTests(unittest.TestCase):
         for n in ("_UNSLOTH", "_DPO"):
             body = getattr(finetune, n).safe_substitute(finetune._subs(hp, 400, 40, "dataset", "x.py"))
             compile(body, n, "exec")
+
+    def test_train_sh_expands_the_backend_argument(self):
+        # Regression: the template held "\${1:-unsloth}", which both raised SyntaxWarning on
+        # 3.12 (invalid escape) and made the generated script assign the *literal* text
+        # "${1:-unsloth}" to $backend — so every `train.sh unsloth` fell through to the usage
+        # branch. A shell template has to be readable as shell, and `$` in a Template is `$$.
+        with tempfile.TemporaryDirectory() as d:
+            ds = Path(d) / "dataset"
+            ds.mkdir()
+            for f in ("sft-train.jsonl", "sft-val.jsonl"):
+                (ds / f).write_text('{"messages":[]}\n', encoding="utf-8")
+            (ds / "dpo.jsonl").write_text("", encoding="utf-8")
+            (ds / "stats.json").write_text(json.dumps({"sft_examples": 600, "dpo_pairs": 0}),
+                                           encoding="utf-8")
+            paths = finetune.build(ds, Path(d) / "training")
+            sh = paths["sh"].read_text(encoding="utf-8")
+            rc = subprocess.run(["bash", "-n", str(paths["sh"])], capture_output=True, text=True)
+        self.assertIn('backend="${1:-unsloth}"', sh)
+        self.assertNotIn("\\$", sh, "no escaped-dollar leftovers in the shell script")
+        self.assertIn("python3 training/", sh)
+        self.assertNotIn("$script", sh, "the placeholder must be filled, not printed")
+        self.assertEqual(rc.returncode, 0, f"bash -n: {rc.stderr}")
 
     def test_build_emits_all_backends_and_manifest_hashes(self):
         with tempfile.TemporaryDirectory() as d:

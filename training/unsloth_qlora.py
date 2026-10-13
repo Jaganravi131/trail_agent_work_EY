@@ -1,4 +1,4 @@
-"""QLoRA fine-tune of Qwen/Qwen3.6-8B on the WealthForge house-style corpus.
+"""QLoRA fine-tune of qwen3.6-8b on the WealthForge house-style corpus.
 
 Run it where a GPU is: a free Colab/Kaggle T4 (16 GB) or any 24 GB card.
     python training/unsloth_qlora.py
@@ -15,7 +15,7 @@ from trl import SFTConfig, SFTTrainer
 from unsloth import FastLanguageModel
 from unsloth.chat_templates import get_chat_template, train_on_responses_only
 
-BASE = "Qwen/Qwen3.6-8B"
+BASE = "qwen3.6-8b"
 DATASET_DIR = "dataset"
 MAX_SEQ = 2048
 CHAT_TEMPLATE = "chatml"

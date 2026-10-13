@@ -386,7 +386,7 @@ else
 fi
 need python3 "python 3.10+"
 
-backend="\${1:-unsloth}"
+backend="$${1:-unsloth}"
 case "$backend" in
   unsloth)      need torch "pip install torch unsloth trl datasets"; python3 training/$script ;;
   axolotl)      need axolotl "pip install 'axolotl[deepspeed]'"; axolotl train training/axolotl.yaml ;;

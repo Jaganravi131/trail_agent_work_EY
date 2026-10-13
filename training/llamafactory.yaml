@@ -1,6 +1,6 @@
 # LLaMA-Factory — the web-UI path (llamafactory-cli webui), same dataset.
 ### model
-model_name_or_path: Qwen/Qwen3.6-8B
+model_name_or_path: qwen3.6-8b
 quantization_bit: 4
 template: chatml
 
