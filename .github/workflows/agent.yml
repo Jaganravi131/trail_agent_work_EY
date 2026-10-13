@@ -122,70 +122,13 @@ jobs:
           grep -qi 'licence' dataset/dataset-card.md
 
       - name: The wire path against a local stub model server (no GPU, no secrets)
-        run: |
-          python3 tools/model_stub.py --port 11434 --host 127.0.0.1 --bad-first &
-          STUB=$!
-          trap 'kill $STUB 2>/dev/null || true' EXIT
-          for i in $(seq 1 30); do
-            curl -sf http://127.0.0.1:11434/api/tags >/dev/null && break
-            sleep 1
-          done
-          export WEALFORGE_OLLAMA_URL=http://127.0.0.1:11434
-          python3 -m wealforge model                     # must detect, probe and answer
-          python3 -m wealforge score --out /tmp/scorecard.md >/dev/null
-          python3 -m wealforge pick --top 1 --build >/dev/null
-          # --bad-first plants one gate violation per section: the run below only
-          # passes if the draft → gate → repair loop actually converges.
-          python3 -m wealforge work --verbose --max-ideas 1 --sections 2 --out-dir out \
-            --allow-fail
-          python3 - <<'PY'
-          import pathlib, re
-          logs = sorted(pathlib.Path("out").glob("*/WORK-LOG.md"))
-          assert logs, "no work log written"
-          body = logs[0].read_text()
-          assert "Attempt history" in body, "the loop must document what it tried"
-          assert re.search(r"try1\(\d+w, [1-9]\d*e", body), "the stub should have caused a first-attempt failure"
-          assert "still failing after" not in body, "the repair loop did not converge — that is a real regression"
-          PY
+        # The logic lives in tools/ci/wire-path.sh so that `bash tools/ci/wire-path.sh`
+        # reproduces this step exactly, here, in seconds. Steps written as inline YAML can
+        # only be debugged by reading a log this sandbox cannot fetch.
+        run: bash tools/ci/wire-path.sh
 
       - name: Quality floor on committed assets (measured, not admired)
-        run: |
-          python3 -m wealforge eval --self-check --out 00-strategy/decisions/05-EVAL-RESULTS.md
-          python3 - <<'PY'
-          import json, pathlib, sys
-          d = json.loads(pathlib.Path("00-strategy/decisions/05-EVAL-RESULTS.json").read_text())
-          rows = d["repo_grades"]
-          assert rows, "graded nothing — did the portfolio move?"
-          # Front/back matter (copyright, about the author, "also in this series") carries no
-          # numbers by design, so it is exempt from the specificity floor but NOT from the
-          # grade floor. Exemptions are listed, never silently dropped.
-          MATTER = ("-front-matter", "back-matter", "NOTES")
-          body = [r for r in rows if not any(k in r["file"] for k in MATTER)]
-          exempt = [r["file"] for r in rows if any(k in r["file"] for k in MATTER)]
-          mean = sum(r["score"] for r in rows) / len(rows)
-          errors = sum(r["gate_errors"] for r in rows)
-          cliches = sum(len(r["cliches"]) for r in rows)
-          nums = sum(r["numbers_per_100w"] for r in body) / max(len(body), 1)
-          thin = [r["file"] for r in body if r["numbers_per_100w"] < 0.4]
-          print(f"mean grade {mean:.1f} over {len(rows)} files ({len(body)} body, "
-                f"{len(exempt)} front/back matter exempt from the numbers floor)")
-          print(f"body numbers/100 words: {nums:.2f} · {errors} gate errors · {cliches} clichés")
-          for f in thin:
-              # Per-file thinness is a drafting note, not a compliance failure: warn, don't block.
-              print(f"::warning file={f}::under 0.4 numbers/100 words — worth more specifics in the next pass")
-          bad = []
-          if mean < 75:
-              bad.append(f"mean grade {mean:.1f} below the house floor of 75")
-          if errors:
-              bad.append(f"{errors} gate error(s) in committed assets")
-          if cliches > 1:
-              bad.append(f"{cliches} cliché hits — the voice card or the copy needs attention")
-          if nums < 0.6:
-              bad.append(f"body specificity collapsed to {nums:.2f} numbers/100 words (floor 0.6)")
-          if bad:
-              print("::error::" + "; ".join(bad)); sys.exit(1)
-          print("quality floor holds")
-          PY
+        run: bash tools/ci/quality-floor.sh
 
       - name: Loop — score, pick, brief, dataset, eval, report
         run: |
