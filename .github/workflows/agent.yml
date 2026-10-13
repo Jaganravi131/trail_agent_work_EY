@@ -80,6 +80,21 @@ jobs:
             exit "$rc"
           fi
 
+      - name: No SyntaxWarning in the package (3.14 turns these into errors)
+        # An invalid escape inside a *template string* is how `\${1:-unsloth}` reached
+        # training/train.sh: the file generated fine, ran fine-looking, and did the wrong
+        # thing. Compiling everything with the warning promoted to an error catches it in CI.
+        run: |
+          # Directories, not a find|grep pipeline: an empty file list would make compileall
+          # silently compile '.' instead, which is a step that can never fail.
+          python3 -W error::SyntaxWarning -m compileall -q wealforge tests tools training
+          python3 - <<'PY'
+          from pathlib import Path
+          dirs = ('wealforge', 'tests', 'tools', 'training')
+          n = sum(len(list(Path(d).rglob('*.py'))) for d in dirs)
+          print(f'no invalid escapes, no deprecated syntax, across {n} files')
+          PY
+
       - name: Gate every reader-facing asset (fails the build on an error)
         run: |
           python3 -m wealforge gate 01-book --bundle
@@ -166,6 +181,28 @@ jobs:
                   + 'Change a rule only when the rule is genuinely wrong for this asset — then override it '
                   + 'in `config/gate_rules.json` and say why in the commit.'
             });
+
+      - name: A green run closes the blocking issue (the loop cleans up after itself)
+        # An alert nobody dismisses becomes wallpaper, and wallpaper gets ignored the next time
+        # something is genuinely broken. Only closes what this workflow itself opened.
+        if: success() && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo, owner } = context.repo;
+            const open = await github.rest.issues.listForRepo({ repo, owner, state: 'open', per_page: 50 });
+            const mine = open.data.filter(i => (i.title || '').startsWith('Agent loop blocked:'));
+            for (const i of mine) {
+              await github.rest.issues.createComment({
+                repo, owner, issue_number: i.number,
+                body: 'Green run: https://github.com/' + owner + '/' + repo +
+                      '/actions/runs/' + context.runId +
+                      '\n\nThe gate, the quality floor and the tests all pass, so this closes itself. ' +
+                      'The fix is in the commits between this issue and this run.'
+              });
+              await github.rest.issues.update({ repo, owner, issue_number: i.number, state: 'closed' });
+            }
+            if (mine.length) core.notice('closed ' + mine.length + ' stale agent-loop issue(s)');
 
       - name: Persist the ledger + decision artefacts
         if: github.ref == 'refs/heads/main' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
