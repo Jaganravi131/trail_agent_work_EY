@@ -430,6 +430,74 @@ class PipelineTests(StubServer):
             self.assertTrue(res.fully_generated)
 
 
+# ------------------------------------------------------ stub (a fixture) ----
+def _load_stub():
+    import importlib.util as ilu
+    spec = ilu.spec_from_file_location("model_stub", REPO / "tools" / "model_stub.py")
+    mod = ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+class ModelStubTests(unittest.TestCase):
+    """The stub is a plumbing fixture, and a flaky fixture is worse than no fixture.
+
+    It once sorted its candidate sections by heading overlap alone, which left ties to
+    `Path.glob` order. The laptop and the CI runner picked different prose, and on the runner
+    the pick tripped a per-section rule the fixture could not repair — so the job reported a
+    non-converging gate loop. These two tests are the reason that cannot come back.
+    """
+
+    HEADINGS = ["Caffeine timing on a 12-hour shift", "The mechanism: three problems, not one",
+                "Privacy and offline behaviour", "Answer the question in 3 sentences"]
+
+    def test_the_same_request_always_returns_the_same_text(self):
+        stub = _load_stub()
+        for h in self.HEADINGS:
+            first = stub.approved_section(f"SECTION TO WRITE: {h}")
+            again = stub.approved_section(f"SECTION TO WRITE: {h}")
+            self.assertEqual(first, again, f"non-deterministic reply for {h!r}")
+            self.assertGreater(len(first), 400, "it should serve a real section, not a shrug")
+
+    def test_every_reply_passes_the_per_section_gate(self):
+        stub = _load_stub()
+        for h in self.HEADINGS:
+            body = stub.approved_section(f"SECTION TO WRITE: {h}")
+            rep = gate.evaluate_text(body, "out/x/draft/section.md")
+            self.assertTrue(rep.passed, f"{h!r} served gate-dirty text: "
+                                        f"{[e.rule_id for e in rep.errors]}")
+
+    def test_a_planted_first_draft_fails_and_the_repair_passes(self):
+        stub = _load_stub()
+        stub.STATE["bad_first"] = True
+        stub.STATE["seeded"] = set()
+        try:
+            h = "Caffeine timing on a 12-hour shift"
+            bad = stub.answer(f"SECTION TO WRITE: {h}")
+            self.assertFalse(gate.evaluate_text(bad, "out/x/draft/section.md").passed,
+                             "--bad-first must plant a violation the gate really catches")
+            fixed = stub.answer(f"SECTION: {h}\nThe draft FAILED the pre-publication compliance check")
+            self.assertTrue(gate.evaluate_text(fixed, "out/x/draft/section.md").passed)
+        finally:
+            stub.STATE["bad_first"] = False
+            stub.STATE["seeded"] = set()
+
+    def test_a_probe_never_consumes_a_seeded_reply(self):
+        # Probes used to eat a reply from the queue, which shifted every later answer by one.
+        stub = _load_stub()
+        stub.STATE["bad_first"] = True
+        stub.STATE["seeded"] = set()
+        try:
+            calls = stub.STATE["calls"]
+            self.assertEqual(stub.answer("Reply with exactly OK"), "OK")
+            self.assertIn("board-certified", stub.answer("SECTION TO WRITE: Caffeine timing"),
+                          "the first real draft must be the planted bad one, probe or no probe")
+            self.assertGreater(stub.STATE["calls"], calls)
+        finally:
+            stub.STATE["bad_first"] = False
+            stub.STATE["seeded"] = set()
+
+
 # ------------------------------------------------------------- validate ----
 class ValidateTests(unittest.TestCase):
     def test_clean_metadata_passes(self):

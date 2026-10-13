@@ -38,6 +38,22 @@ PLANT = ("\n\nAs a board-certified sleep physician I can promise you will make $
          "first week with this system.\n")
 
 
+#: What a standalone section needs to satisfy the per-section gate. The stub is not a language
+#: model — it cannot read the repair instructions and comply — so when the repo offers no
+#: section that passes on its own, the fixture appends the line the rule asks for and says so.
+DISCLAIMER = ("\n\n*This is general information about shift-work routines, not medical advice; "
+              "ask a clinician or pharmacist about your own situation.*\n")
+
+
+def _passes_alone(body: str) -> bool:
+    from wealforge import gate
+
+    try:
+        return gate.evaluate_text(body, "out/x/draft/section.md").passed
+    except Exception:                                        # a fixture must not break the loop
+        return True
+
+
 def approved_section(prompt: str) -> str:
     """Pick a real, gate-passing section from the repo whose heading best matches the request."""
     from wealforge import dataset
@@ -47,7 +63,7 @@ def approved_section(prompt: str) -> str:
     if m:
         wanted = m.group(1).strip().splitlines()[0].strip("'\"")
     cands: list[tuple[int, str]] = []
-    for f in list((REPO / "01-book/chapters").glob("*.md")) + list((REPO / "04-seo/articles").glob("*.md")):
+    for f in sorted((REPO / "01-book/chapters").glob("*.md")) + sorted((REPO / "04-seo/articles").glob("*.md")):
         for title, body in dataset.split_sections(f.read_text(encoding="utf-8", errors="ignore")):
             if len(body) < 500:
                 continue
@@ -56,8 +72,16 @@ def approved_section(prompt: str) -> str:
             cands.append((overlap, body))
     if not cands:
         return "## Stub\n\nNo repo sections available to serve. This is a plumbing test only.\n"
-    cands.sort(key=lambda x: -x[0])
-    return cands[0][1][:4000]
+    # Sort on (overlap, the text itself). Sorting only on overlap left ties to be broken by
+    # directory-entry order, and `Path.glob` promises none — so this fixture returned different
+    # prose on the CI runner than on the laptop, and the difference was enough to make the
+    # gate-repair loop look like it failed to converge. A test double that varies by filesystem
+    # is not a test double.
+    cands.sort(key=lambda x: (-x[0], x[1]))
+    for _overlap, body in cands:
+        if _passes_alone(body):
+            return body[:4000]
+    return (cands[0][1].rstrip() + DISCLAIMER)[:4000]
 
 
 def answer(prompt: str) -> str:

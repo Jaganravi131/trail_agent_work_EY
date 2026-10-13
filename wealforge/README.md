@@ -121,7 +121,11 @@ No GPU and no model handy? `python3 tools/model_stub.py --port 11434 --bad-first
 real text over the real Ollama wire format, so the whole pipeline — including the repair
 loop, which has something to repair — can be exercised in seconds. `tests/test_models.py`
 uses the same trick: the HTTP path is tested over sockets against a stub, never against the
-internet.
+internet. CI calls the same two files it runs (`bash tools/ci/wire-path.sh`,
+`bash tools/ci/quality-floor.sh`) rather than keeping a private copy of the logic in YAML,
+because a check you can only run on someone else's machine cannot be debugged here — and the
+stub picks its reply by heading overlap with ties broken by the text itself, never by
+`Path.glob` order, so a fixture cannot fail a build for filesystem reasons.
 
 ## Deliberate omissions
 
