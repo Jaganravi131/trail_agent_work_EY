@@ -37,7 +37,9 @@ Assumes ~2 hr/day of human time in weeks 1–4, then ~1 hr/day. Assets are alrea
 
 ## The fact-check pass (do it, don't skip it)
 
-Six claims need your eyes against a primary source today, because a book that is wrong about health gets 1-star reviews and could get someone hurt:
+Ten claims need your eyes against a primary source today, because a book that is wrong about
+health gets 1-star reviews and could get someone hurt (items 1–6 are the manuscript; 7–10 came in
+with the two articles added on 2026-10-13):
 
 1. Caffeine half-life "~5 h, range 2–10 h" (ch. 4)
 2. "Up to ~400 mg/day" and "single doses ~200 mg" adult guidance figure
@@ -45,6 +47,10 @@ Six claims need your eyes against a primary source today, because a book that is
 4. "One in five serious collisions involve drowsiness" — this statistic is cited loosely all over; either find the source you can name or soften to "a substantial share"
 5. Room temperature 18–20 °C for sleep onset
 6. "Sleep cycles ~90 min" (varies 70–120; the book already hedges — confirm the wording reads as an approximation)
+7. "A 30–60 minute nap lands in deep sleep and costs you up to an hour of impairment" — the inertia window art. 04 builds its whole recommendation on (art. 04 §which nap)
+8. "Roughly 1 day of adjustment per hour of shift moved, and about twice that going backward" — stated as a rule of thumb in art. 05; check the direction of the advice is right even if you soften the number
+9. "Under about 5 lux at pillow height" and "daylight leaking around a curtain gap is enough to hold a clock in place" — the lux figure is the one to verify or generalise to "if you can read by it, it's too bright" (art. 05)
+10. "200 mg caffeine plus a 20-minute nap buys roughly half an hour of mitigation" — the coffee-nap claim, used in both new articles and in the drowsy-driving rule; if the evidence won't support "half an hour", cut the number and keep the instruction to stop
 
 Anything you can't verify in 10 minutes: soften or cut. This manuscript is *safe* by construction — no supplements, no drug dosing, no diagnosis, no treatment claims — keep it that way through your edits.
 
