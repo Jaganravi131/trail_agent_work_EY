@@ -1,0 +1,51 @@
+{
+  "generated_utc": "2026-10-14T09:18:06Z",
+  "base_model": "qwen3.6-8b",
+  "method": "QLoRA (4-bit NF4 base + LoRA adapters)",
+  "chat_template": "chatml",
+  "dataset": {
+    "dir": "dataset",
+    "sft_train_sha256_16": "1e0a8166b1355332",
+    "sft_val_sha256_16": "a759c14e74429837",
+    "dpo_sha256_16": "e3b0c44298fc1c14",
+    "sft_examples": 117,
+    "dpo_pairs": 0
+  },
+  "hyperparameters": {
+    "base_model": "qwen3.6-8b",
+    "method": "QLoRA (4-bit NF4 base + LoRA adapters)",
+    "r": 16,
+    "alpha": 16,
+    "dropout": 0.0,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ],
+    "max_seq_length": 2048,
+    "batch_size": 2,
+    "grad_accum": 4,
+    "epochs": 3.0,
+    "lr": "2e-4",
+    "optimizer": "paged_adamw_8bit",
+    "weight_decay": 0.01,
+    "schedule": "cosine",
+    "warmup": 0.03,
+    "dpo_beta": 0.1,
+    "dpo_lr": "5e-5",
+    "chat_template": "chatml",
+    "notes": [
+      "r=16/alpha=16 on all attention+MLP projections: the standard Unsloth starting point.",
+      "epochs 3 on ~1k examples is the usual sweet spot; more epochs on a small corpus buys repetition of house tics, not capability.",
+      "max_seq_length 2048 matches the dataset builder's section cap \u2014 a longer window costs VRAM you could spend on batch size."
+    ]
+  },
+  "provenance_rule": "corpus = gate-passing, operator-approved repo assets only (see dataset/dataset-card.md). Do not add scraped data or outputs from models whose licence bars training on them.",
+  "fine_tune_recommended": false,
+  "recommendation_note": "117 SFT examples and 0 preference pairs is below the floor (150/40). A LoRA on this would mostly learn to imitate formatting while degrading instruction-following, and you would have no way to tell the difference at 40 examples.",
+  "est_total_steps": 42
+}

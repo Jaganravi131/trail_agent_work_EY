@@ -1,0 +1,317 @@
+name: agent-loop
+
+# The unattended half of the operation: re-score, re-gate, rebuild the corpus,
+# measure the writing, report. On GitHub's free runners this costs nothing and needs
+# no secrets to be useful — the model path is exercised against a local stub server,
+# so the HTTP integration is verified on every push without pulling 15 GB of weights.
+# If provider keys are added as repo secrets later, DRAFT=1 makes it draft prose too —
+# still with a human in the loop before anything is published.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'          # Mondays 06:17 UTC — off the :00 crowd
+  push:
+    paths:
+      - 'wealforge/**'
+      - 'config/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'training/**'
+      - '.github/workflows/agent.yml'
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: 'draft prose with a configured provider (needs secrets)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: agent-loop
+  cancel-in-progress: false
+
+jobs:
+  loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DRAFT: ${{ github.event.inputs.draft == 'true' && '1' || '0' }}
+      # Secrets are exposed as env vars only (never interpolated into a shell line,
+      # which is how keys end up in public logs). The job works without them: it
+      # scores, gates and reports, and simply skips the drafting step.
+      # WEALFORGE_ALLOW_PAID is deliberately NOT set: a scheduled job must not be
+      # able to spend, even with a key present.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # The stub model server binds here; every step then sees the same provider the
+      # wire-path job starts, and offline steps just find nothing listening.
+      WEALFORGE_OLLAMA_URL: http://127.0.0.1:11434
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Unit tests (stdlib unittest, nothing to install)
+        # A failed run's raw log is not readable from here, so the useful lines go into an
+        # annotation, which is a structured API field. Failing test names + the traceback tail,
+        # not 400 lines of nothing. This also helps the human clicking through from an email.
+        run: |
+          set +e
+          python3 -m unittest discover -s tests -q >/tmp/tests.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/tests.log
+          if [ "$rc" -ne 0 ]; then
+            python3 - <<'PY'
+          import pathlib, re
+          t = pathlib.Path("/tmp/tests.log").read_text()
+          names = re.findall(r"^(?:FAIL|ERROR): (\S+)", t, re.M)
+          tail = "\n".join(t.splitlines()[-70:])
+          msg = f"{len(names)} failing: " + (", ".join(names[:8]) or "see tail") + " || " + tail
+          msg = msg.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print(f"::error::{msg}")
+          PY
+            exit "$rc"
+          fi
+
+      - name: No SyntaxWarning in the package (3.14 turns these into errors)
+        # An invalid escape inside a *template string* is how `\${1:-unsloth}` reached
+        # training/train.sh: the file generated fine, ran fine-looking, and did the wrong
+        # thing. Compiling everything with the warning promoted to an error catches it in CI.
+        run: |
+          # Directories, not a find|grep pipeline: an empty file list would make compileall
+          # silently compile '.' instead, which is a step that can never fail.
+          python3 -W error::SyntaxWarning -m compileall -q wealforge tests tools training
+          python3 - <<'PY'
+          from pathlib import Path
+          dirs = ('wealforge', 'tests', 'tools', 'training')
+          n = sum(len(list(Path(d).rglob('*.py'))) for d in dirs)
+          print(f'no invalid escapes, no deprecated syntax, across {n} files')
+          PY
+
+      - name: Gate every reader-facing asset (fails the build on an error)
+        run: |
+          # Widened to the whole read-facing corpus, in --strict mode: the KDP sheet, the calendar, the
+          # tracker notes and the risk pages are all things a stranger either reads or acts on, and a
+          # warning here has always turned into a sentence in someone's listing. `00-strategy` stays
+          # out — it is the audit trail of rejected ideas, and half of it is banned phrasing quoted in
+          # order to be refused.
+          python3 -m wealforge gate 01-book --bundle
+          python3 -m wealforge gate 03-tool 04-seo 02-kdp 05-marketing 06-tracking 07-risks \
+            --summary --strict --out 00-strategy/decisions/gate-latest.md
+
+      - name: Self-gate the agent's own docs, tests and configs
+        # Includes `00-strategy/` and the two root documents: the revenue model is the file most likely
+        # to drift into an income promise, and the front door is the one a stranger reads first. Integrity
+        # rules apply to internal files in full — only the reader-safeguard presence rules stand down,
+        # which is why `changelog` (not `metadata`: a listing file is reader-facing) is in the hints.
+        run: python3 -m wealforge gate wealforge/ tests/ config/ tools/ training/ 00-strategy/ README.md CHANGELOG.md --summary --strict
+
+      - name: Model registry sanity (offline — ranks by licence, then VRAM)
+        run: |
+          python3 -m wealforge model --list
+          python3 -m wealforge model --select --for-finetune --out 00-strategy/decisions/model-recommendation.md
+          # A licence that forbids training on its outputs must never be a tune base.
+          grep -q 'llama4-scout' 00-strategy/decisions/model-recommendation.md \
+            && grep -A2 'llama4-scout' 00-strategy/decisions/model-recommendation.md | grep -qi 'DISQUALIFIED'
+
+      - name: Build the fine-tuning corpus + training configs
+        run: |
+          python3 -m wealforge dataset --out dataset
+          python3 -m wealforge finetune --dataset-dir dataset --out training
+          python3 - <<'PY'
+          import json, pathlib, py_compile
+          s = json.loads(pathlib.Path("dataset/stats.json").read_text())
+          assert s["sft_examples"] >= 20, f"corpus too small to be real: {s}"
+          # The emitted training code must be valid on a clean runner, or the
+          # operator discovers it at minute nine of a GPU session.
+          for f in ("unsloth_qlora.py", "dpo_tune.py"):
+              py_compile.compile(f"training/{f}", doraise=True, cfile="/tmp/chk.pyc")
+          nb = json.loads(pathlib.Path("training/colab-qlora.ipynb").read_text())
+          assert nb["nbformat"] == 4 and len(nb["cells"]) >= 6
+          PY
+          bash -n training/train.sh
+          # The templates must still say what they are for; these greps fail if a refactor
+          # quietly drops the part of the recipe that makes it fit a free T4.
+          test -f training/README.md && test -f training/axolotl.yaml && test -f training/llamafactory.yaml
+          grep -qi '4-bit' training/README.md
+          grep -qi 'adapter' training/unsloth_qlora.py training/axolotl.yaml
+          grep -qi 'load_in_4bit' training/unsloth_qlora.py
+          grep -qi 'provenance' dataset/dataset-card.md
+          grep -qi 'licence' dataset/dataset-card.md
+
+      - name: The wire path against a local stub model server (no GPU, no secrets)
+        # The logic lives in tools/ci/wire-path.sh so that `bash tools/ci/wire-path.sh`
+        # reproduces this step exactly, here, in seconds. Steps written as inline YAML can
+        # only be debugged by reading a log this sandbox cannot fetch.
+        run: bash tools/ci/wire-path.sh
+
+      - name: Quality floor on committed assets (measured, not admired)
+        run: bash tools/ci/quality-floor.sh
+
+      - name: Loop — score, pick, brief, dataset, eval, report
+        run: |
+          FLAGS="--allow-fail --out-dir out"
+          PAID=${WEALFORGE_ALLOW_PAID:-0}
+          if [ "$DRAFT" = "1" ] && [ -n "$ANTHROPIC_API_KEY$OPENAI_API_KEY" ] && [ "$PAID" = "1" ]; then
+            # Reaching here means an operator set a key AND WEALFORGE_ALLOW_PAID=1 as a repo
+            # *variable*. Both are needed: a cron holding a key is how a $0 project gets an invoice.
+            FLAGS="$FLAGS --with-model"; echo "drafting via the configured hosted provider"
+          else
+            echo "offline mode: briefs + math + gates only, no prose generated"
+            echo "  (drafting needs DRAFT + a key + WEALFORGE_ALLOW_PAID=1; the stub job above"
+            echo "   already proves the HTTP path, so nothing here depends on a paid call)"
+          fi
+          python3 -m wealforge run $FLAGS
+
+      - name: The free tool — its arithmetic, run headlessly
+        run: |
+          # The planner is the only interactive thing in this portfolio and the only one a reader
+          # trusts with tomorrow's schedule, so the workflow executes it instead of reading its
+          # markup: nine rota patterns through go(), plus the .ics bytes and the error paths.
+          #
+          # `tools/ci/planner-check.sh` prints SKIP and exits 0 where node is absent, which is the
+          # right call on a laptop. It is not the right call here: a green check that never ran the
+          # planner would be exactly the unverifiable claim the README used to make. So SKIP in CI
+          # is a failure, and the node version is printed so the record says what executed the JS.
+          node --version || echo "node: not found"
+          rc=0
+          out=$(bash tools/ci/planner-check.sh 2>&1) || rc=$?
+          echo "$out"
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::planner-check exited $rc — see the assertions above"
+            exit "$rc"
+          fi
+          if echo "$out" | grep -q '^SKIP'; then
+            echo "::error::node is not on PATH in this workflow, so the planner's JavaScript was never executed. Add actions/setup-node, or run the check where node exists — a skipped check must not be reported as a passing one."
+            exit 1
+          fi
+
+      - name: Site build — docs/ matches its sources, every link resolves
+        run: |
+          # ./wf site is the only thing that turns the markdown into a deployable folder, so the
+          # generated docs/ tree is committed and diffed here: a rebuild must be byte-identical.
+          # If it is not, either someone edited docs/ by hand or a page changed and nobody
+          # rebuilt — both mean the published site would differ from the source of truth.
+          python3 -m wealforge site --out /tmp/sitecheck --check
+          python3 -m wealforge site --report 00-strategy/decisions/site-latest.md
+          if ! git diff --exit-code --quiet -- docs; then
+            echo "::error::docs/ is stale or hand-edited — run \`./wf site\` and commit the result"
+            git --no-pager diff --stat -- docs
+            exit 1
+          fi
+          grep -rIl 'href="/[a-z0-9-]*/"' docs | grep . && {
+            echo "::error::an absolute link reached docs/ — it breaks under a GitHub Pages subpath"
+            exit 1; } || true
+
+      - name: Ebook build — the paid file matches the chapters
+        run: |
+          # `--check` first: it is the step that answers the only question that matters before an
+          # upload — is 01-book/manuscript.md (what the paperback path and the docx read) still the
+          # chapters in git? A stale aggregate is how a customer ends up with last month's book.
+          python3 -m wealforge book --check
+          python3 -m wealforge validate 02-kdp/kdp-metadata.json
+          python3 -m wealforge book --report 00-strategy/decisions/book-latest.md --out /tmp/epub-a
+          python3 -m wealforge book --out /tmp/epub-b
+          # Byte-identical rebuilds are the whole reason this build is trustworthy in CI: if the zip
+          # differs between two runs, a diff can never prove the file matches its sources.
+          cmp /tmp/epub-a/night-shift-reset.epub /tmp/epub-b/night-shift-reset.epub || {
+            echo "::error::the ebook is not reproducible — two builds produced different bytes"; exit 1; }
+          python3 - <<'PY'
+          import zipfile, xml.etree.ElementTree as ET
+          z = zipfile.ZipFile("/tmp/epub-a/night-shift-reset.epub")
+          names = z.namelist()
+          assert names[0] == "mimetype" and z.getinfo("mimetype").compress_type == 0, names[:2]
+          for n in names:
+              if n.endswith((".xhtml", ".opf", ".ncx", ".xml")):
+                  ET.fromstring(z.read(n).decode("utf-8"))
+          opf = z.read("OEBPS/content.opf").decode()
+          assert 'dcterms:modified' in opf and 'properties="nav"' in opf
+          assert "<dc:language>en-GB</dc:language>" in opf, "the listing and the file must agree"
+          print(f"EPUB OK — {len(names)} parts")
+          PY
+
+      - name: Failing gate opens an issue, once
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo, owner } = context.repo;
+            const title = `Agent loop blocked: gate, eval or tests failing (${new Date().toISOString().slice(0,10)})`;
+            // One open issue at a time; it closes when a run goes green again.
+            const open = await github.rest.issues.listForRepo({ repo, owner, state: 'open', per_page: 50 });
+            // Dedupe on the prefix, not on a label: a repo without the label would 422 here and
+            // the CI failure you wanted to see would be replaced by one you did not.
+            if (open.data.some(i => (i.title || '').startsWith('Agent loop blocked:'))) return;
+            await github.rest.issues.create({
+              repo, owner, title,
+              body: 'The weekly loop could not complete. Nothing was published. Read the run log: '
+                  + `https://github.com/${owner}/${repo}/actions/runs/${context.runId}\n\n`
+                  + 'The gate reports errors only for things with a documented fix, and the quality floor '
+                  + 'fails on measurable shape (no numbers, no next action, clichés). Fix the copy first. '
+                  + 'Change a rule only when the rule is genuinely wrong for this asset — then override it '
+                  + 'in `config/gate_rules.json` and say why in the commit.\n\n'
+                  + '**Commit:** `' + context.sha.slice(0, 7) + '`\n'
+                  + '<!-- agent-loop-sha: ' + context.sha + ' -->'
+            });
+
+      - name: A green run closes the blocking issue (the loop cleans up after itself)
+        # An alert nobody dismisses becomes wallpaper, and wallpaper gets ignored the next time
+        # something is genuinely broken. Only closes what this workflow itself opened.
+        if: success() && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo, owner } = context.repo;
+            const open = await github.rest.issues.listForRepo({ repo, owner, state: 'open', per_page: 50 });
+            const mine = open.data.filter(i => (i.title || '').startsWith('Agent loop blocked:'));
+            // Close only what this commit makes stale. A red run can finish *after* a newer green one
+            // (that happened: the issue outlived its own fix), so "any green run closes everything"
+            // would be wrong in the other direction too — it would dismiss an alert about a commit that
+            // is newer than the run that is green. So compare commits, and treat a marker-less issue as
+            // legacy-but-stale because no issue predates the loop itself.
+            const stale = [];
+            for (const i of mine) {
+              const m = /agent-loop-sha: ([0-9a-f]{40})/.exec(i.body || '');
+              if (!m) { stale.push(i); continue; }
+              if (m[1] === context.sha) { stale.push(i); continue; }
+              try {
+                const cmp = await github.rest.repos.compareCommitsWithBasehead({
+                  repo, owner, basehead: `${m[1]}...${context.sha}`});
+                // 'ahead' only. A diverged pair means the failing commit is on some other line of
+                // work, and dismissing that alert because this branch is green would be the loop
+                // hiding its own bad news.
+                if (cmp.data.status === 'ahead') stale.push(i);
+              } catch (e) {
+                core.warning(`could not compare ${m[1].slice(0, 7)} with HEAD: ${e.message}`);
+              }
+            }
+            for (const i of stale) {
+              await github.rest.issues.createComment({
+                repo, owner, issue_number: i.number,
+                body: 'Green run: https://github.com/' + owner + '/' + repo +
+                      '/actions/runs/' + context.runId +
+                      '\n\nThe gate, the quality floor and the tests all pass, so this closes itself. ' +
+                      'The fix is in the commits between this issue and this run.'
+              });
+              await github.rest.issues.update({ repo, owner, issue_number: i.number, state: 'closed' });
+            }
+            if (stale.length) core.notice('closed ' + stale.length + ' stale agent-loop issue(s)');
+
+      - name: Persist the ledger + decision artefacts
+        if: github.ref == 'refs/heads/main' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name  "wealthforge-agent"
+          git config user.email "action@github.com"
+          git add docs
+          git add 01-book/manuscript.md 2>/dev/null || true   # generated aggregate: if the loop
+                                                              # refreshed it, the refresh belongs here
+          git add 00-strategy/decisions 2>/dev/null || git add -f 00-strategy/decisions
+          git diff --cached --quiet || git commit -m "agent loop: scorecard, model pick, corpus, eval, site $(date -u +%F)"
+          git push || true

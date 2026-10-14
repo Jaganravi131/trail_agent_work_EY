@@ -1,0 +1,5 @@
+{
+  "note": "Operator sign-off register for the fine-tuning corpus. While `approved` is EMPTY, `wf dataset` accepts every gate-passing file in the include list. Add entries by reading the files and running: wf approve 04-seo/articles --by YOUR_NAME --config config/approval.json \u2014 sha is the first 16 hex chars of sha256, and an edit after sign-off invalidates that record (the file is excluded, not silently re-used). Sign-off is a human act: the agent will write the record only when you run the command.",
+  "strict_warnings": false,
+  "approved": {}
+}

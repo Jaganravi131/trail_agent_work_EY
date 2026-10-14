@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-label="Shift Reset">
+  <!-- The site's mark is the planner's mark, deliberately: one identity across the free tool, the
+       articles and the book listing. Navy #0b1220 + amber #f2a33c are the cover brief's palette —
+       amber is the low-blue end of the spectrum, the part a body clock reacts to least.
+       No gradient, no photo, no clip-art scene: it has to survive being 16 px on a browser tab. -->
+  <rect width="32" height="32" rx="7" fill="#0b1220"/>
+  <circle cx="16" cy="16" r="9" fill="none" stroke="#f2a33c" stroke-width="2.5"/>
+  <path d="M16 10a6 6 0 1 0 6 6 7.5 7.5 0 0 1-6-6z" fill="#f2a33c"/>
+</svg>

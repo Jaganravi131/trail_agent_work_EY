@@ -1,0 +1,25 @@
+:root{--bg:#0b1220;--fg:#e8eefc;--mut:#9fb0cc;--card:#111c31;--line:#22304b;--amber:#f2a33c}
+@media (prefers-color-scheme:light){:root{--bg:#fff;--fg:#12203a;--mut:#4d5f80;--card:#f6f8fc;--line:#dde4f0}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);
+font:17px/1.65 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:46rem;margin:0 auto;padding:1.25rem 1.1rem 3rem}
+nav.top{display:flex;gap:.9rem;flex-wrap:wrap;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--line);font-size:.95rem}
+nav.top a{color:var(--amber);text-decoration:none}nav.top a:hover{text-decoration:underline}
+h1{font-size:1.9rem;line-height:1.2;margin:1.4rem 0 .4rem}h2{font-size:1.35rem;margin:2rem 0 .5rem}
+h3{font-size:1.1rem;margin:1.5rem 0 .4rem}p,li{overflow-wrap:break-word}
+a{color:var(--amber)}hr{border:0;border-top:1px solid var(--line);margin:2rem 0}
+.meta{color:var(--mut);font-size:.88rem;margin:0 0 1.2rem}
+table{border-collapse:collapse;width:100%;margin:1.1rem 0;font-size:.93rem;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:.45rem .55rem;text-align:left;vertical-align:top}
+th{background:var(--card)}code{background:var(--card);padding:.1rem .3rem;border-radius:4px;font-size:.9em}
+blockquote{margin:1.1rem 0;padding:.7rem .9rem;background:var(--card);border-left:3px solid var(--amber);border-radius:0 6px 6px 0}
+ul,ol{padding-left:1.3rem}li{margin:.3rem 0}
+.cards{display:grid;gap:.8rem;grid-template-columns:1fr}@media(min-width:640px){.cards{grid-template-columns:1fr 1fr}}
+.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.85rem .95rem;text-decoration:none;color:inherit}
+.card b{display:block;font-size:1.02rem;margin-bottom:.2rem}.card span{color:var(--mut);font-size:.9rem}
+footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--mut);font-size:.88rem}
+.aff-note{border:1px solid var(--amber);border-radius:8px;padding:.55rem .75rem;margin:0 0 1.2rem;font-size:.92rem}
+figure.photo img{width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--line)}
+  .photo-slot{border:1px dashed var(--line);border-radius:10px;padding:1.4rem 1rem;margin:1.2rem 0;text-align:center;color:var(--mut)}
+.photo-note{display:block;font-size:.82rem;opacity:.85;margin-bottom:.35rem}
+img{max-width:100%;height:auto;border-radius:10px}

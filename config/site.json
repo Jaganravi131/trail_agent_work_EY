@@ -1,0 +1,25 @@
+{
+  "site_name": "Shift Reset",
+  "site_description": "Sleep, food and light for people who work overnights. A free planner, seven long guides, one book — written by someone who has done the shifts.",
+  "language": "en-GB",
+  "home_h1": "Sleep, food and light for people who work overnights",
+  "lede": "Enter your shift times, get the schedule. Everything here is original, cited and free to read; the planner needs no sign-up and uploads nothing.",
+  "author": "J. Arek Thorne",
+  "contact": "",
+  "base_url": "",
+  "affiliate_hosts": [
+    "amzn.to",
+    "amazon.com",
+    "amazon.co.uk",
+    "awin1.com",
+    "impact.com"
+  ],
+  "notes": {
+    "base_url": "Leave empty until a domain exists. Empty means no canonical tags and no sitemap.xml — the builder prefers omitting those to inventing a host. Set it after the site is live, then run ./wf site to rebuild.",
+    "affiliate_hosts": "Any link whose host matches one of these gets rel=\"sponsored nofollow\" and a disclosure banner at the top of the page. FTC requires the disclosure; the builder makes it impossible to forget.",
+    "no_build_step": "GitHub Pages and Netlify Drop both serve the generated docs/ folder as-is, which is why there is no bundler here.",
+    "contact": "How readers reach you — an address, a form URL, anything real. The footer prints it only when it is non-empty; leaving it empty is honest, inventing an inbox is not. Fill this before applying to any affiliate programme.",
+    "home_h1": "The homepage headline, separate from the <title> on purpose: the title tag carries the site name for search results, the headline has to say what the site is for a human who just arrived.",
+    "language": "A BCP-47 tag (en-GB, en-US, pt-BR) written into four places: every page's <html lang=, the schema's inLanguage, the feed's <language> and — via 02-kdp/kdp-metadata.json — the ebook's dc:language. The copy is British English (lorry, bin lorry, colour, apnoea), so that is what it says. A value that is not a tag fails the build, and a test checks the prose against the claim, because a declared variety the text does not use is worse than no declaration."
+  }
+}

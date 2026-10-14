@@ -1,0 +1,82 @@
+name: build-book
+
+# Free CI: no local pandoc, no paid toolchain. Push markdown, get the ebook back.
+# GitHub Actions free tier for a public repo is unlimited minutes; on a private repo these two jobs
+# are ~2 min/run, well inside the 2,000 min/month free allowance.
+#
+# Two jobs on purpose. The EPUB is built by `./wf book`, which is stdlib-only, so it runs on the plain
+# runner with the same code the tests cover and the same code you run on a laptop. The .docx needs
+# pandoc, whose container has no python — so it gets its own job and reads the committed manuscript.
+# Neither job can quietly produce a file that does not match the chapters: `wf book --check` fails the
+# run before anything is rewritten.
+
+on:
+  push:
+    paths:
+      - '01-book/**'
+      - '02-kdp/**'
+      - '.github/workflows/build-book.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ebook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse to build on a stale manuscript (checked before anything is written)
+        run: python3 -m wealforge.cli book --check
+
+      - name: Validate the listing metadata against KDP's documented field limits
+        run: python3 -m wealforge.cli validate 02-kdp/kdp-metadata.json
+
+      - name: Build the EPUB
+        run: python3 -m wealforge.cli book --report 01-book/build/BOOK-REPORT.md
+
+      - name: Confirm the EPUB is a container, not a pile of files in a zip
+        run: |
+          python3 - <<'PY'
+          import sys, zipfile, xml.etree.ElementTree as ET
+          z = zipfile.ZipFile("01-book/build/night-shift-reset.epub")
+          names = z.namelist()
+          assert names[0] == "mimetype", names[:2]
+          assert z.read("mimetype") == b"application/epub+zip"
+          assert z.getinfo("mimetype").compress_type == 0, "mimetype must be stored uncompressed"
+          for n in names:
+              if n.endswith((".xhtml", ".opf", ".ncx", ".xml")):
+                  ET.fromstring(z.read(n).decode("utf-8"))
+          opf = z.read("OEBPS/content.opf").decode()
+          assert 'dcterms:modified' in opf and 'properties="nav"' in opf
+          print(f"EPUB OK — {len(names)} parts, {z.fp.seek(0,2) // 1024} KB")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: night-shift-reset-epub
+          path: |
+            01-book/build/*.epub
+            01-book/build/BOOK-REPORT.md
+          if-no-files-found: error
+          retention-days: 90
+
+  editable-docx:
+    runs-on: ubuntu-latest
+    container:
+      image: pandoc/core:3
+    steps:
+      - uses: actions/checkout@v4
+
+      # Docx exists for one reason: a comment-and-edit pass in Google Docs is free, and reviewers
+      # mark up a docx rather than markdown. KDP upload should use the EPUB, not this.
+      - name: Build DOCX
+        run: cd 01-book && pandoc manuscript.md -o build/night-shift-reset.docx
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: night-shift-reset-docx
+          path: 01-book/build/*.docx
+          if-no-files-found: error
+          retention-days: 90

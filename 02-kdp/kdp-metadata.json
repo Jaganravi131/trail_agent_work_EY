@@ -1,0 +1,26 @@
+{
+  "_read_this_first": "These are the exact strings to paste into the KDP backend. The sheet in this folder was the source; this file is now the source and the sheet says so. `./wf validate 02-kdp/kdp-metadata.json` checks the field limits, the keyword rules and the claim rules, and `./wf book` reads title, author, language and rights from here for the EPUB. Price is NOT here: `./wf price --words` computes it and it changes, so pasting a number from this file would go stale.",
+  "title": "The Night Shift Reset",
+  "subtitle": "The 28-Day System for Eating, Caffeine and Light Timing for Nurses, EMTs, Warehouse and Overnight Desk Crews Who Are Wired at 8 a.m.",
+  "series": "Overnight Systems",
+  "author": "J. Arek Thorne",
+  "description_html": "<h3>You can't fix a night shift with willpower.</h3>\n<p>Nobody tells you what to actually do at 3 a.m. Not what to eat, not when to stop the coffee, not how to sleep through a Saturday morning your neighbours have filled with a lawnmower. The advice you get is generic: darken the room, drink water, go to bed at the same time. Same time as who? Your body doesn't own a clock that matches your roster.</p>\n<p><i>The Night Shift Reset</i> replaces guesswork with five numbers and one sequence you can run on 12-hour nights, a 4-on-4-off pattern, or a rota you didn't choose.</p>\n<p><b>Inside:</b></p>\n<ul>\n<li><b>The Descent / Hold / Reentry model</b> — why your shift is three short problems with different solutions, and why advice that treats it as one problem fails</li>\n<li><b>The 3-2-1-0 countdown</b> — the last food, last caffeine, lights down and no-clock times, with the arithmetic that makes it stick</li>\n<li><b>Caffeine as a scheduler, not a starter</b> — a half-life table showing what a 02:00 dose is still doing to you at noon, and why \"I can fall asleep fine after coffee\" is not evidence</li>\n<li><b>The anchor-meal rule</b> — why your big meal belongs in hour one, plus menu templates for one microwave, no fridge at all, and an 8-minute break that may not come</li>\n<li><b>The $0 bedroom rebuild</b> — towel, foil, duvet and a fan: what beats a purchased blackout setup, and the earplugs almost everyone inserts wrong</li>\n<li><b>The drive home</b> — why you must never drive when you are drowsy, the coffee nap that buys 30 minutes and no more, and the 20-minute rule</li>\n<li><b>The bridge day and the two-step pivot</b> for days off, plus the exact written script for asking your rota manager for a safer pattern (and the fallback that gets you a yes on something)</li>\n<li><b>28 days, one rule per day</b>, with a 2-minute log that ends with a system tuned to your body instead of a study you'll never read</li>\n</ul>\n<p><b>Also free with the book:</b> the Shift Reset Planner web app — enter your start time, get your nap, light, caffeine and sleep alarms, printed as a fridge card. No account, nothing uploaded.</p>\n<p><b>Not in this book:</b> supplements, sleep aids, medical claims, or anyone telling you to just go to bed earlier. This is educational, not medical advice — no diagnosis, no treatment, no dosing. Written by someone who has worked nights, not by a clinician; read the disclaimer in chapter 1 and take it seriously.</p>\n<p><b>Start with one alarm tonight.</b> The rest of the sequence arrives over four weeks.</p>",
+  "categories": [
+    "Medical Books > Nursing > Nursing Skills & Practice",
+    "Business & Money > Industries > Labor"
+  ],
+  "keywords": [
+    "night shift sleep for nurses",
+    "shift work sleep disorder coping",
+    "12 hour shift schedule survival",
+    "rotating shift worker wellness",
+    "how to sleep during the day",
+    "emergency department nurse burnout",
+    "circadian rhythm reset adult"
+  ],
+  "language": "en-GB",
+  "publisher": "Independently published",
+  "rights": "Copyright © 2026 J. Arek Thorne. All rights reserved.",
+  "ai_content_declaration": "AI-assisted — a human reviewed, edited and fact-checked every claim, and owns the accuracy. Answer truthfully; a false declaration here is account-permanent.",
+  "confirm_before_upload": "Field limits, the 70% price band and the categories tree are KDP's, not ours, and they change. Checked 2026-10-11. `./wf price --words N` for the numbers."
+}

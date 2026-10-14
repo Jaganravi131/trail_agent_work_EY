@@ -1,0 +1,15 @@
+01-book/build/
+.DS_Store
+node_modules/
+.wealforge/
+out/
+# Generated corpora can be large and are reproducible from the repo's own assets.
+# `training/` stays tracked on purpose: the configs are the deliverable, and their
+# diff is how a hyper-parameter change gets reviewed.
+dataset/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local preview/server logs: never a deliverable, and easy to commit by accident.
+*.log

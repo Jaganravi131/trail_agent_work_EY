@@ -1,0 +1,46 @@
+# LLaMA-Factory — the web-UI path (llamafactory-cli webui), same dataset.
+### model
+model_name_or_path: qwen3.6-8b
+quantization_bit: 4
+template: chatml
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 16
+lora_alpha: 16
+lora_dropout: 0.0
+lora_target: all
+
+### dataset
+dataset_dir: dataset
+dataset: wf-sft
+eval_dataset: wf-val
+cutoff_len: 2048
+preprocessing_num_workers: 2
+max_samples: 100000
+overwrite_cache: true
+
+### train
+num_train_epochs: 3.0
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 4
+learning_rate: 0.0002
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+bf16: true
+gradient_checkpointing: true
+optim: paged_adamw_8bit
+logging_steps: 10
+save_steps: 10
+
+### output
+output_dir: out/finetune/llamafactory
+report_to: none
+
+# dataset/ must also contain dataset_info.json for LLaMA-Factory to find the files:
+#   {"wf-sft": {"file_name": "sft-train.jsonl", "formatting": "sharegpt",
+#               "columns": {"messages": "messages"}},
+#    "wf-val": {"file_name": "sft-val.jsonl", "formatting": "sharegpt",
+#               "columns": {"messages": "messages"}}}

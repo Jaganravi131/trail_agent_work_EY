@@ -1,0 +1,19 @@
+{
+  "note": "Optional overrides for the compliance gate. `gate --rules config/gate_rules.json`. Keep this file honest: an override that exists only to silence a true finding is how an account dies later. Say why in the commit.",
+  "rules": [],
+  "disable": [],
+  "skip": {"rules": []},
+  "documented_examples": {
+    "downgrade_a_warning": {
+      "rules": [{"id": "Q1", "severity": "warn", "title": "Opening cliché",
+                 "pattern": "^(in today'?s fast[- ]]?paced world)",
+                 "why": "kept as a warn because editors pattern-match on it",
+                 "fix": "open on a scene, a number or a contradiction"}]
+    },
+    "disable_a_false_positive_family": {
+      "disable": ["T1"],
+      "only_if": "you are writing a genuine comparative review and every brand mention is truthful, non-confusive, and in body text rather than keywords — and you have read the current trademark policy"
+    },
+    "per_line_suppression": "…never buy reviews from a swap group. <!-- gate:allow R1 -->"
+  }
+}
