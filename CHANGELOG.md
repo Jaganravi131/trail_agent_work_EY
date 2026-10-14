@@ -77,7 +77,8 @@ that no command could prove were made provable.
   at their meal time, and `.ics` lines ran past 75 octets, which a strict calendar client rejects (RFC 5545
   §3.1) — now folded. `tests/test_planner.py` also breaks the page deliberately (curfew, calendar tail,
   folding rule) so the harness cannot pass by doing nothing, and skips with a visible reason where node is
-  absent.
+  absent — while the CI step turns a SKIP into a failure, because a check that did not run must not be
+  reported as one that passed.
 - The site builder stopped assuming its own assets exist: the favicon link is written only when
   `04-seo/images/favicon.svg` does, and the nav and the footer's policy link are built from the slugs the
   build produced. A shell that hard-codes `/planner/` in every page of a tree with no `03-tool/` is the same

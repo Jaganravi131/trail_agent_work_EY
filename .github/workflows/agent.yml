@@ -174,10 +174,24 @@ jobs:
         run: |
           # The planner is the only interactive thing in this portfolio and the only one a reader
           # trusts with tomorrow's schedule, so the workflow executes it instead of reading its
-          # markup. Nine rota patterns through go(), plus the .ics bytes and the error paths. Where
-          # node is absent the script prints SKIP and exits 0; tests/test_planner.py carries the
-          # same skip, so the gap is visible in both places rather than hidden in one.
-          bash tools/ci/planner-check.sh
+          # markup: nine rota patterns through go(), plus the .ics bytes and the error paths.
+          #
+          # `tools/ci/planner-check.sh` prints SKIP and exits 0 where node is absent, which is the
+          # right call on a laptop. It is not the right call here: a green check that never ran the
+          # planner would be exactly the unverifiable claim the README used to make. So SKIP in CI
+          # is a failure, and the node version is printed so the record says what executed the JS.
+          node --version || echo "node: not found"
+          rc=0
+          out=$(bash tools/ci/planner-check.sh 2>&1) || rc=$?
+          echo "$out"
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::planner-check exited $rc — see the assertions above"
+            exit "$rc"
+          fi
+          if echo "$out" | grep -q '^SKIP'; then
+            echo "::error::node is not on PATH in this workflow, so the planner's JavaScript was never executed. Add actions/setup-node, or run the check where node exists — a skipped check must not be reported as a passing one."
+            exit 1
+          fi
 
       - name: Site build — docs/ matches its sources, every link resolves
         run: |
