@@ -342,6 +342,14 @@ def _read_pages(root: Path, links: LinkSink, aff: tuple[str, ...],
             slug = slug.strip("/") + "/"
             rendered, heads = render_body(body, slug, links, aff)
             words = count_words(body)
+            # Same rule the ebook builder applies: a block type the renderer does not understand must
+            # not disappear from a public page. Letters-only, so the digits a list marker contributes
+            # in markdown and not in <ol> do not read as lost prose.
+            visible = len(re.findall(r"[A-Za-z][A-Za-z'\u2019-]{1,}", re.sub(r"<[^>]+>", " ", rendered)))
+            seen = len(re.findall(r"[A-Za-z][A-Za-z'\u2019-]{1,}", body))
+            if seen - visible > max(40, int(0.015 * seen)):
+                errors.append(f"{src}: {seen - visible} of {seen} words never reached the page — the "
+                              "renderer met a block it does not know and dropped it")
             pages.append(Page(slug=slug, src=src, title=str(meta["title"]),
                               description=str(meta["description"]),
                               last_reviewed=str(meta.get("last_reviewed", "")),

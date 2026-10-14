@@ -23,7 +23,7 @@ from uuid import UUID
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from wealforge import book  # noqa: E402
+from wealforge import book, site  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -198,6 +198,29 @@ class Fixture(unittest.TestCase):
         res = self.build()
         self.assertFalse(res.ok)
         self.assertTrue(any("image" in e.lower() for e in res.errors), res.errors)
+
+    def test_the_build_proves_the_prose_survived_the_renderer(self):
+        """Not a size check — a "the whole chapter is in the file" check.
+
+        A perfect container with a chapter half-rendered is the failure mode no validator catches and
+        every reader does, so the builder counts the words it was given against the words it emitted.
+        """
+        self.assertTrue(self.build().ok, "the fixture renders loss-free")
+        # A chapter long enough to clear the builder's floor (a 25-word fixture chapter cannot lose
+        # 40 words, and a check with a floor needs a fixture above it — not a smaller floor).
+        long_chapter = "# 3. The Long One\n\n" + ("The quick brown fox jumps over the lazy log. " * 20)
+        _write(self.root, "01-book/chapters/03-long.md", long_chapter)
+        self.assertTrue(self.build().ok, self.build().errors)
+        real = site.render_body
+        try:
+            site.render_body = lambda body, slug, links, aff, **kw: ("<p>Only a fraction of it</p>",
+                                                                     ["Only"])
+            res = self.build()
+        finally:
+            site.render_body = real
+        self.assertFalse(res.ok)
+        self.assertTrue(any("dropped" in e and "words" in e for e in res.errors), res.errors)
+        self.assertTrue(any("03-long" in e for e in res.errors), res.errors)
 
     def test_a_chapter_without_a_heading_fails(self):
         (self.root / "01-book" / "chapters" / "05-lost.md").write_text("Just a paragraph.\n",

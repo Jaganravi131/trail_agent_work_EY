@@ -45,6 +45,11 @@ DEFAULT_OUT = "01-book/build"
 KDP_COVER_W, KDP_COVER_H = 2560, 1600
 WORDS_PER_READ_MINUTE = 250          # for the "is this too long to read in one sitting" line only
 
+# Visible words only: the digits a markdown list marker contributes (``1.`` → "1") exist in the
+# source and not in an <ol>, so counting them would report a loss in every chapter that has a
+# numbered list. Letters-only makes the comparison about prose.
+ALPHA_WORDS = re.compile(r"[A-Za-z][A-Za-z'\u2019-]{1,}")
+
 TODO_RE = re.compile(r"\b(TODO|FIXME|TBD|XXX)\b|\[[ ]*(placeholder|insert|fill in|add|write)\b", re.I)
 IMAGE_RE = re.compile(r"^!\[", re.M)
 VOID_RE = re.compile(r"<(hr|br|img|col|source|wbr)\b([^>]*?)(?<!/)>")
@@ -412,6 +417,15 @@ def build_book(root: str | Path = ".", out_dir: str | Path | None = None,
             res.warnings.append(f"{src}: {len(links.external)} external link(s) in the ebook — fine, "
                                 "but a reader on e-ink cannot click through to a source, so keep the "
                                 "citation text next to it")
+        # Nothing else in this build proves the *whole* book is in the file: the container can be
+        # flawless with a chapter quietly half-rendered, and a reader finds that hole, not the validator.
+        visible = ALPHA_WORDS.findall(re.sub(r"<[^>]+>", " ", inner))
+        source = ALPHA_WORDS.findall(body)
+        lost = len(source) - len(visible)
+        if lost > max(40, int(0.015 * len(source))):
+            res.errors.append(f"{src}: the renderer dropped {lost} of {len(source)} words — a block type "
+                              "it does not understand vanishes from the file. Fix the renderer, do not "
+                              "trim the chapter")
         c = Chapter(src=src, name=src.stem, title=title, words=site.count_words(body),
                     file_name=f"OEBPS/{src.stem}.xhtml", xhtml=_xhtml(inner))
         c.toc = [(int(m.group(1)), m.group(2), _plain(m.group(3)))

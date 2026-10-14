@@ -119,6 +119,24 @@ class Fixture(unittest.TestCase):
         self.assertTrue(res.ok, res.errors)
         self.assertFalse(self.out.exists(), "--check must not touch the deploy folder")
 
+    def test_prose_the_renderer_drops_is_a_build_error(self):
+        # Every block type the little renderer does not know is a paragraph that silently vanishes
+        # from a public page. The check is on the render, not on the file, so a future renderer
+        # change cannot quietly lose a section.
+        # Above the rule's floor: a 60-word fixture page cannot lose 40 words and a check with a
+        # floor has to be tested with a corpus above the floor, not by shrinking the floor to fit.
+        long = ART_A.replace("slug: /alpha/", "slug: /long/").replace("# Alpha", "# Long") + "\n" + \
+            ("The quick brown fox jumps over the lazy log. " * 18)
+        _write(self.root, "04-seo/articles/03-long.md", long.replace("link to beta", "link"))
+        real = site.render_body
+        try:
+            site.render_body = lambda body, slug, links, aff, **kw: ("<p>A fraction</p>", ["A"])
+            res = site.build(self.root, out_dir=self.out)
+        finally:
+            site.render_body = real
+        self.assertTrue(any("never reached the page" in e for e in res.errors), res.errors)
+        self.assertTrue(any("03-long" in e for e in res.errors), res.errors)
+
     def test_a_link_to_a_page_that_does_not_exist_is_an_error(self):
         _write(self.root, "04-seo/articles/03-gamma.md",
                ART_B.replace("Beta", "Gamma").replace("/alpha/", "/no-such-page/"))
