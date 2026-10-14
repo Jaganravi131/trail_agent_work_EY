@@ -233,7 +233,9 @@ jobs:
                   + 'The gate reports errors only for things with a documented fix, and the quality floor '
                   + 'fails on measurable shape (no numbers, no next action, clichés). Fix the copy first. '
                   + 'Change a rule only when the rule is genuinely wrong for this asset — then override it '
-                  + 'in `config/gate_rules.json` and say why in the commit.'
+                  + 'in `config/gate_rules.json` and say why in the commit.\n\n'
+                  + '**Commit:** `' + context.sha.slice(0, 7) + '`\n'
+                  + '<!-- agent-loop-sha: ' + context.sha + ' -->'
             });
 
       - name: A green run closes the blocking issue (the loop cleans up after itself)
@@ -246,7 +248,28 @@ jobs:
             const { repo, owner } = context.repo;
             const open = await github.rest.issues.listForRepo({ repo, owner, state: 'open', per_page: 50 });
             const mine = open.data.filter(i => (i.title || '').startsWith('Agent loop blocked:'));
+            // Close only what this commit makes stale. A red run can finish *after* a newer green one
+            // (that happened: the issue outlived its own fix), so "any green run closes everything"
+            // would be wrong in the other direction too — it would dismiss an alert about a commit that
+            // is newer than the run that is green. So compare commits, and treat a marker-less issue as
+            // legacy-but-stale because no issue predates the loop itself.
+            const stale = [];
             for (const i of mine) {
+              const m = /agent-loop-sha: ([0-9a-f]{40})/.exec(i.body || '');
+              if (!m) { stale.push(i); continue; }
+              if (m[1] === context.sha) { stale.push(i); continue; }
+              try {
+                const cmp = await github.rest.repos.compareCommitsWithBasehead({
+                  repo, owner, basehead: `${m[1]}...${context.sha}`});
+                // 'ahead' only. A diverged pair means the failing commit is on some other line of
+                // work, and dismissing that alert because this branch is green would be the loop
+                // hiding its own bad news.
+                if (cmp.data.status === 'ahead') stale.push(i);
+              } catch (e) {
+                core.warning(`could not compare ${m[1].slice(0, 7)} with HEAD: ${e.message}`);
+              }
+            }
+            for (const i of stale) {
               await github.rest.issues.createComment({
                 repo, owner, issue_number: i.number,
                 body: 'Green run: https://github.com/' + owner + '/' + repo +
@@ -256,7 +279,7 @@ jobs:
               });
               await github.rest.issues.update({ repo, owner, issue_number: i.number, state: 'closed' });
             }
-            if (mine.length) core.notice('closed ' + mine.length + ' stale agent-loop issue(s)');
+            if (stale.length) core.notice('closed ' + stale.length + ' stale agent-loop issue(s)');
 
       - name: Persist the ledger + decision artefacts
         if: github.ref == 'refs/heads/main' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
