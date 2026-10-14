@@ -360,7 +360,7 @@ INDEX = """<!doctype html>
 {canonical}<link rel="stylesheet" href="styles.css">
 <!-- built by `wf site` from 04-seo/. No analytics, no cookies, no external requests. -->
 </head><body><div class="wrap">
-<h1>{title}</h1>
+<h1>{h1}</h1>
 <p class="meta">{lede}</p>
 <main>
 <div class="cards">
@@ -539,6 +539,10 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
                  'times into the nap, caffeine and light schedule — one file, works offline.</span></a></p>')
     index_html = INDEX.format(
         title=html.escape(str(cfg.get("site_name", "Shift Reset — sleep, food and light for night work"))),
+        # The visible headline is not the <title>: "Shift Reset / Shift Reset" is what a template
+        # writes when the two are the same variable, and the headline is the one line a first-time
+        # reader actually reads.
+        h1=html.escape(str(cfg.get("home_h1", "Sleep, food and light for people who work overnights"))),
         desc=html.escape(str(cfg.get("site_description", "Original, practical guidance for people who work "
                                                           "overnights. Free planner, five long guides, one book."))),
         canonical=_canonical(base_url, ""), lede=html.escape(str(cfg.get("lede", ""))) or
