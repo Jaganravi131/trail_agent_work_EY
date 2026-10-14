@@ -107,7 +107,11 @@ jobs:
             --summary --strict --out 00-strategy/decisions/gate-latest.md
 
       - name: Self-gate the agent's own docs, tests and configs
-        run: python3 -m wealforge gate wealforge/ tests/ config/ tools/ training/ --summary --strict
+        # Includes `00-strategy/` and the two root documents: the revenue model is the file most likely
+        # to drift into an income promise, and the front door is the one a stranger reads first. Integrity
+        # rules apply to internal files in full — only the reader-safeguard presence rules stand down,
+        # which is why `changelog` (not `metadata`: a listing file is reader-facing) is in the hints.
+        run: python3 -m wealforge gate wealforge/ tests/ config/ tools/ training/ 00-strategy/ README.md CHANGELOG.md --summary --strict
 
       - name: Model registry sanity (offline — ranks by licence, then VRAM)
         run: |

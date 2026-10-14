@@ -467,7 +467,10 @@ INTERNAL_HINTS = ("00-strategy", "02-kdp", "06-tracking", "07-risks", "wealforge
                   # Planning and bookkeeping artefacts. A content calendar is not something a reader
                   # consumes, so demanding a medical disclaimer in it is a wolf-cry — and every wolf-cry
                   # costs trust in the whole gate.
-                  "calendar", "work-log", "metadata", "dataset-card", "training/readme")
+                  "calendar", "work-log", "dataset-card", "training/readme",
+                  # A changelog describes the build; it is not advice to a reader, and demanding a
+                  # safety line in it is how a presence rule gets ignored where it matters.
+                  "changelog")
 
 
 def audience_of(target: str) -> str:

@@ -25,6 +25,7 @@ Working asset library produced by **WealthForge** — a zero-capital income oper
 | `05-marketing/01-CONTENT-CALENDAR.md` | 30 days, **every post written and paste-ready** |
 | `06-tracking/` | the weekly CSV + how to read it |
 | `07-risks/` | compliance rules, and the diagnosis tree for when numbers don't move |
+| `CHANGELOG.md` | what has changed since the version was declared, and the five steps to cut the first tag |
 
 ## The free tool
 

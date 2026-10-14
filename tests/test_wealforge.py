@@ -130,6 +130,18 @@ REPO = Path(__file__).resolve().parents[1]
 
 
 class TestGate(unittest.TestCase):
+    def test_a_listing_file_is_never_classified_as_internal_by_a_path_hint(self):
+        """`audience_of` is a substring matcher over a hint list, so one broad hint can stand the
+        safeguards down on the exact copy that needs them: a KDP blurb is reader-facing prose wearing a
+        `.json` extension. `wf validate` forces the audience; this keeps the hint list from quietly
+        making that moot."""
+        self.assertEqual(gate.audience_of("02-kdp/kdp-metadata.json"), "reader")
+        self.assertEqual(gate.audience_of("CHANGELOG.md"), "internal")     # a build note, not advice
+        self.assertEqual(gate.audience_of("04-seo/articles/05-new.md"), "reader")
+        for hint in gate.INTERNAL_HINTS:
+            self.assertNotEqual(hint, "metadata", "a hint that matches any metadata file would "
+                                                  "exempt the listing copy from S1/S2")
+
     def test_a_generated_aggregate_is_not_gated_twice(self):
         """`01-book/` holds the chapters *and* the manuscript `wf book` assembles from them.
 
