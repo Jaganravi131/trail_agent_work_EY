@@ -11,7 +11,7 @@ tool, and it has no ability to spend money.
 ./wf score                 # pre-screen + score config/scan_seed.json → 00-strategy/decisions/
 ./wf pick --build          # select top N, write briefs + KDP backend + cover brief + calendar
 ./wf gate 01-book --bundle # compliance/integrity gate (exit 1 on errors)
-./wf price --words 11566   # royalty bands, delivery fee, print cost, scenarios, traffic math
+./wf price --words 11262   # royalty bands, delivery fee, print cost, scenarios, traffic math
 ./wf report                # trends + ONE recommended experiment from the tracker CSV
 ./wf today                 # this day's human actions, from the 90-day schedule
 ./wf run                   # the whole loop, unattended-safe (what CI runs weekly)
@@ -27,8 +27,11 @@ python3 -m unittest discover -s tests -q     # 158 tests, no network
 ./wf eval --self-check     # style + gate grades on committed assets; no model, no network
 ./wf eval --compare A.json B.json   # base vs fine-tuned: regressions, not vibes
 ./wf site [--check]          # build docs/ from 04-seo + 03-tool: clean URLs, disclosures, link graph
+./wf book [--check]          # 01-book/chapters → EPUB3 with the standard library; refuses a stale
+                             # manuscript, a placeholder in a paid file, a cover that lies about its size
 ./wf approve 04-seo/articles --by "name" --config config/approval.json  # sign off corpus input
-./wf validate out/x/METADATA.json   # KDP field limits: 7×49 chars, ≤200 title, no claims
+./wf validate 02-kdp/kdp-metadata.json    # KDP field limits: 7×49 chars, ≤200 title, no claims —
+                             # the same file ./wf book titles the ebook from
 ```
 
 ## Architecture
@@ -70,6 +73,10 @@ python3 -m unittest discover -s tests -q     # 158 tests, no network
  site.py      04-seo + 03-tool → docs/: clean URLs, affiliate disclosure injected, every
               internal link resolved, OG/Twitter cards + JSON-LD + RSS when the domain exists,
               no invented domain, byte-identical rebuilds
+ book.py     01-book/chapters → 01-book/build/*.epub: EPUB3 built with the standard library,
+              listing metadata read from 02-kdp/kdp-metadata.json, every part XML-validated,
+              cover pixels checked against the filename, byte-identical rebuilds, and a
+              manuscript aggregate that fails the build when it stops matching the chapters
  modelhub.py  config/models.json registry: licence traits filter first, then VRAM
                              │  reader assets: safeguards required
                              │  internal docs: integrity rules only

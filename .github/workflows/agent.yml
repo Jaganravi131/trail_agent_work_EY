@@ -97,8 +97,14 @@ jobs:
 
       - name: Gate every reader-facing asset (fails the build on an error)
         run: |
+          # Widened to the whole read-facing corpus, in --strict mode: the KDP sheet, the calendar, the
+          # tracker notes and the risk pages are all things a stranger either reads or acts on, and a
+          # warning here has always turned into a sentence in someone's listing. `00-strategy` stays
+          # out — it is the audit trail of rejected ideas, and half of it is banned phrasing quoted in
+          # order to be refused.
           python3 -m wealforge gate 01-book --bundle
-          python3 -m wealforge gate 03-tool 04-seo --summary --out 00-strategy/decisions/gate-latest.md
+          python3 -m wealforge gate 03-tool 04-seo 02-kdp 05-marketing 06-tracking 07-risks \
+            --summary --strict --out 00-strategy/decisions/gate-latest.md
 
       - name: Self-gate the agent's own docs, tests and configs
         run: python3 -m wealforge gate wealforge/ tests/ config/ tools/ training/ --summary --strict
@@ -177,6 +183,33 @@ jobs:
             echo "::error::an absolute link reached docs/ — it breaks under a GitHub Pages subpath"
             exit 1; } || true
 
+      - name: Ebook build — the paid file matches the chapters
+        run: |
+          # `--check` first: it is the step that answers the only question that matters before an
+          # upload — is 01-book/manuscript.md (what the paperback path and the docx read) still the
+          # chapters in git? A stale aggregate is how a customer ends up with last month's book.
+          python3 -m wealforge book --check
+          python3 -m wealforge validate 02-kdp/kdp-metadata.json
+          python3 -m wealforge book --report 00-strategy/decisions/book-latest.md --out /tmp/epub-a
+          python3 -m wealforge book --out /tmp/epub-b
+          # Byte-identical rebuilds are the whole reason this build is trustworthy in CI: if the zip
+          # differs between two runs, a diff can never prove the file matches its sources.
+          cmp /tmp/epub-a/night-shift-reset.epub /tmp/epub-b/night-shift-reset.epub || {
+            echo "::error::the ebook is not reproducible — two builds produced different bytes"; exit 1; }
+          python3 - <<'PY'
+          import zipfile, xml.etree.ElementTree as ET
+          z = zipfile.ZipFile("/tmp/epub-a/night-shift-reset.epub")
+          names = z.namelist()
+          assert names[0] == "mimetype" and z.getinfo("mimetype").compress_type == 0, names[:2]
+          for n in names:
+              if n.endswith((".xhtml", ".opf", ".ncx", ".xml")):
+                  ET.fromstring(z.read(n).decode("utf-8"))
+          opf = z.read("OEBPS/content.opf").decode()
+          assert 'dcterms:modified' in opf and 'properties="nav"' in opf
+          assert "<dc:language>en-GB</dc:language>" in opf, "the listing and the file must agree"
+          print(f"EPUB OK — {len(names)} parts")
+          PY
+
       - name: Failing gate opens an issue, once
         if: failure()
         uses: actions/github-script@v7
@@ -227,6 +260,8 @@ jobs:
           git config user.name  "wealthforge-agent"
           git config user.email "action@github.com"
           git add docs
+          git add 01-book/manuscript.md 2>/dev/null || true   # generated aggregate: if the loop
+                                                              # refreshed it, the refresh belongs here
           git add 00-strategy/decisions 2>/dev/null || git add -f 00-strategy/decisions
           git diff --cached --quiet || git commit -m "agent loop: scorecard, model pick, corpus, eval, site $(date -u +%F)"
           git push || true

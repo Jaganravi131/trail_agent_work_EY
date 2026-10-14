@@ -1,6 +1,13 @@
 # KDP Backend — copy-paste upload sheet
 
-Manuscript source: `01-book/manuscript.md` (assemble with `01-book/build.sh`, or push and let the free GitHub Action do it — see `.github/workflows/build-book.yml`).
+Two files matter here, and only one of them is hand-edited:
+
+| File | Role |
+|---|---|
+| `02-kdp/kdp-metadata.json` | **the source of every field below** — title, subtitle, description, 7 keywords, 2 categories, language, rights. `./wf validate 02-kdp/kdp-metadata.json` checks KDP's documented limits (49-char keywords, 7 fields, 2 categories, no trademark, no credential, no promise), and `./wf book` writes those same values into the EPUB, so the file you upload and the listing that sells it cannot disagree. |
+| `01-book/manuscript.md` | generated. `./wf book` writes it and refuses to build when it no longer matches `01-book/chapters/`; the free Action does the same and hands back the `.epub` and `.docx`. |
+
+The EPUB needs **no installs**: `./wf book` builds it with the standard library. `01-book/build.sh` stays for the print PDF and the DOCX, which genuinely need pandoc.
 
 ## Title block
 
@@ -21,6 +28,8 @@ The 28-Day System for Eating, Caffeine and Light Timing for Nurses, EMTs, Wareho
 
 ## Description (paste into KDP's editor; HTML tags below are supported)
 
+<!-- The canonical copy of the four blocks below is 02-kdp/kdp-metadata.json. This section is the human-readable view of it, and a test asserts the two still match. If you want to change the listing, change the JSON and re-read this sheet. -->
+
 ```html
 <h3>You can't fix a night shift with willpower.</h3>
 <p>Nobody tells you what to actually do at 3 a.m. Not what to eat, not when to stop the coffee, not how to sleep through a Saturday morning your neighbours have filled with a lawnmower. The advice you get is generic: darken the room, drink water, go to bed at the same time. Same time as who? Your body doesn't own a clock that matches your roster.</p>
@@ -32,12 +41,12 @@ The 28-Day System for Eating, Caffeine and Light Timing for Nurses, EMTs, Wareho
 <li><b>Caffeine as a scheduler, not a starter</b> — a half-life table showing what a 02:00 dose is still doing to you at noon, and why "I can fall asleep fine after coffee" is not evidence</li>
 <li><b>The anchor-meal rule</b> — why your big meal belongs in hour one, plus menu templates for one microwave, no fridge at all, and an 8-minute break that may not come</li>
 <li><b>The $0 bedroom rebuild</b> — towel, foil, duvet and a fan: what beats a purchased blackout setup, and the earplugs almost everyone inserts wrong</li>
-<li><b>The drive home</b> — the non-negotiables, the coffee nap, and the 20-minute rule</li>
+<li><b>The drive home</b> — why you must never drive when you are drowsy, the coffee nap that buys 30 minutes and no more, and the 20-minute rule</li>
 <li><b>The bridge day and the two-step pivot</b> for days off, plus the exact written script for asking your rota manager for a safer pattern (and the fallback that gets you a yes on something)</li>
 <li><b>28 days, one rule per day</b>, with a 2-minute log that ends with a system tuned to your body instead of a study you'll never read</li>
 </ul>
 <p><b>Also free with the book:</b> the Shift Reset Planner web app — enter your start time, get your nap, light, caffeine and sleep alarms, printed as a fridge card. No account, nothing uploaded.</p>
-<p><b>Not in this book:</b> supplements, sleep aids, medical claims, or anyone telling you to just go to bed earlier. Written by someone who has worked nights, not by a clinician — read the disclaimer in chapter 1 and take it seriously.</p>
+<p><b>Not in this book:</b> supplements, sleep aids, medical claims, or anyone telling you to just go to bed earlier. This is educational, not medical advice — no diagnosis, no treatment, no dosing. Written by someone who has worked nights, not by a clinician; read the disclaimer in chapter 1 and take it seriously.</p>
 <p><b>Start with one alarm tonight.</b> The rest of the sequence arrives over four weeks.</p>
 ```
 
@@ -68,12 +77,12 @@ Deliberately absent: "insomnia cure", "cure", "bedtime hacks", trademarked terms
 
 | Format | Price | Royalty maths | Notes |
 |---|---|---|---|
-| Ebook, KDP Select enrolled | **$3.99** | 70% − delivery fee ≈ **$2.70/sale** | 70% band is $2.99–$9.99. A text-only ~170-page file: delivery fee typically ~$0.02–0.07 at the "no images" tier — verify in the app at upload. |
-| Paperback 6×9 | **$9.99** | 11,566 words ≈ **46 print pages** at ~340 pp/page + matter → print cost ≈ $1.40; 60% − cost ≈ **$4.59/sale** | **Correction:** an earlier draft of this sheet assumed ~170 pages / $12.99 — that page count belongs to a 45k-word book, not this one. A ~46-page paperback at $12.99 is a refund magnet and a 1-star waiting to happen. Two honest options: (a) price the booklet at $7.99–9.99, or (b) expand the manuscript to ~20k words by putting the worksheets and two worked examples inline, which supports ~$12.99 honestly. `wf price --words N` computes this; run it after any expansion. |
+| Ebook, KDP Select enrolled | **$3.99** | 70% − delivery fee ≈ **$2.70/sale** | 70% band is $2.99–$9.99. The built file is ~45 KB of text with no images, so the delivery fee is the smallest tier (≈$0.01–0.06) — `./wf book` prints the size, `./wf price` the fee, and the live app is the authority at upload. |
+| Paperback 6×9 | **$9.99** | 11,262 words ≈ **45 print pages** at ~340 pp/page + matter → print cost ≈ $1.40; 60% − cost ≈ **$4.59/sale** | **Correction:** an earlier draft of this sheet assumed ~170 pages / $12.99 — that page count belongs to a 45k-word book, not this one. A ~45-page paperback at $12.99 is a refund magnet and a 1-star waiting to happen. Two honest options: (a) price the booklet at $7.99–9.99, or (b) expand the manuscript to ~20k words by putting the worksheets and two worked examples inline, which supports ~$12.99 honestly. `wf price --words N` computes this; run it after any expansion. |
 | Launch week (days 1–5) | **$0.99** | 35% ≈ $0.29/sale | 5 days, not 10. Goal is verified reviews + rank, not revenue. |
 | KDP Select free days | Days 12–13 and days 26–27 | $0 | Pushes you into "also bought" feeds. Give the ebook free twice; never more. |
 
-Enrol in KDP Select (90 days, exclusive ebook). Trade-off you're accepting: no ebook sales on Apple/Kobo/B&N for 90 days, in exchange forKENP page-read revenue (~$0.004/page → ~$0.60 for a 170-page read) and free-promo mechanics. For an unknown author in a discoverable niche, that trade is correct in quarter one. Re-evaluate at renewal if KENP is >30% of income.
+Enrol in KDP Select (90 days, exclusive ebook). Trade-off you're accepting: no ebook sales on Apple/Kobo/B&N for 90 days, in exchange for KENP page-read revenue (~$0.0045 per counted page → **~$0.18 for a full read of this book**) and free-promo mechanics. Read that figure as what KDP Select is worth on this title: rank and reviews, not income. Re-evaluate at renewal if KENP is >30% of income. For an unknown author in a discoverable niche, that trade is correct in quarter one. Re-evaluate at renewal if KENP is >30% of income.
 
 ## AI disclosure — answer these honestly at upload
 
@@ -84,12 +93,12 @@ Answering falsely in that declaration is a policy violation with an account-perm
 
 ## Manuscript formatting for upload
 
-1. Page count reality: this manuscript is ~11.6k words ≈ 46 print pages. For a paperback, expand to ~20k (worksheets + two full worked examples inline) or accept booklet pricing.
-2. EPUB built by `pandoc manuscript.md -o The-Night-Shift-Reset.epub` with a `style.css` (in `01-book/`) for headings, 1.15 line spacing, justified-off, and `page-break-before` on `h1`. Free; run it in the included GitHub Action if you have no local pandoc.
-2. Do **not** upload a `.docx` with manual page breaks and a TOC you typed by hand. Let KDP generate the TOC from heading styles, and let the ebook reflow.
-3. Fixed-layout only for the ASCII boxes in chapter 9 — if the art breaks on an e-ink preview, replace those boxes with a monospace-image PNG per page and set them as a "print replica" only for the paperback.
-4. Paperback: upload PDF (6×9, 0.5" margins, mirror, 11 pt serif, 1.3 leading), front matter with an ISBN-free KDP ISBN, no bleed.
-5. Preview every chapter on the Kindle previewer before hitting publish, at 800×600, because tables in KDP ebooks are the #1 cause of "unreadable formatting" reviews.
+1. Page count reality: `./wf book` prints the exact figure — **11,262 words ≈ 45 print pages**. For a paperback, expand to ~20k (worksheets + two full worked examples inline) or accept booklet pricing.
+2. EPUB: `./wf book` → `01-book/build/night-shift-reset.epub`. It applies `01-book/style.css` (left-aligned, no forced font size, `break-before: page` on `h1`, tables that scroll, `pre { white-space: pre-wrap }` for the ASCII cards) and it validates what it writes: every part parses as XML, every table-of-contents anchor exists on its page, the manifest ids are legal XML ids, and `mimetype` is the first entry and stored. `pandoc --to epub3` makes an equivalent file if you prefer it; the repo's builder exists because pandoc is an install and a hand-made zip is where Kindle previewers bite.
+3. Do **not** upload a `.docx` with manual page breaks and a TOC you typed by hand. Let KDP generate the TOC from heading styles, and let the ebook reflow.
+4. Fixed-layout only for the ASCII boxes in chapter 9 — if the art breaks on an e-ink preview, replace those boxes with a monospace-image PNG per page and set them as a "print replica" only for the paperback. (In the built file they are real `<pre>` blocks, so they only break on a device that ignores monospace — the two that do are named in the ebook report.)
+5. Paperback: upload PDF (6×9, 0.5" margins, mirror, 11 pt serif, 1.3 leading), front matter with an ISBN-free KDP ISBN, no bleed.
+6. Preview every chapter on the Kindle previewer before hitting publish, at 800×600, because tables in KDP ebooks are the #1 cause of "unreadable formatting" reviews.
 
 ## Pre-publish checklist (25 minutes, in order)
 
@@ -97,8 +106,9 @@ Answering falsely in that declaration is a policy violation with an account-perm
 - [ ] Verify every number: 400 mg caffeine guidance, 5 h half-life, 18–20 °C, sleep-cycle length, the 400 mg study reference in ch. 4, the "one in five collisions" claim in ch. 6. Fix or soften anything that isn't defensible. Check the current public guidance for each figure today rather than trusting this file.
 - [ ] Confirm no diagnosis/treatment claims, no supplement dosing, no drug advice. Ch. 1 and 6 disclaimers present.
 - [ ] Confirm no fabricated credentials anywhere (title, bio, cover, author page).
-- [ ] Cover uploaded at 2,560×1,600; thumbnail legible at 100 px.
-- [ ] Title/subtitle/series/categories/7 keywords/description pasted.
+- [ ] Cover uploaded at 2,560×1,600; thumbnail legible at 100 px. If `02-kdp/cover-2560x1600.jpg` exists, `./wf book` reads its actual dimensions and refuses the build when they are not exactly that — the filename cannot lie about the file.
+- [ ] `./wf book --check` passes (it refuses a stale manuscript, a leftover placeholder and a cover whose pixels disagree with its filename), and `./wf validate 02-kdp/kdp-metadata.json` passes.
+- [ ] Title/subtitle/series/categories/7 keywords/description pasted **from `02-kdp/kdp-metadata.json`** — not retyped from this sheet, which exists to explain the choices.
 - [ ] Price $3.99, rights "all territories", "I own all rights", AI declaration answered truthfully.
 - [ ] Author Central profile created with the honest bio + a plain headshot or an initial mark, and the book claim-linked.
 - [ ] Paperback proof ordered as a *digital* proof first ($0) and approved before committing to a physical proof.

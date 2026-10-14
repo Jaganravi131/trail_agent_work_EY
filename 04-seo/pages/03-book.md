@@ -11,7 +11,7 @@ internal_links: ["/planner/", "/sleep-after-night-shift/", "/nap-before-shift/",
 
 ![The cover: navy field, amber type — replace with the exported cover JPEG once it exists](images/cover-front.jpg)
 
-*A 28-day system for sleeping on the wrong hours.* Nine chapters, a worksheet pack, front and back matter. About 11,600 words, which is roughly 46 pages at 6×9 — deliberately short, because a shift worker will not read 250 pages at 13:00 with an alarm set.
+*A 28-day system for sleeping on the wrong hours.* Nine chapters, a worksheet pack, front and back matter — 11,262 words, which prints to about 45 pages at 6×9. Deliberately short: a shift worker will not read 250 pages at 13:00 with an alarm set, and a book they finish beats one they admire on the shelf.
 
 This page is honest about the state of the thing. Here is what is true today:
 

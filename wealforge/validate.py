@@ -64,6 +64,22 @@ TODO_RE = re.compile(r"TODO\(human[^)]*\)|\bTBD\b|\bXXX\b", re.I)
 #: HTML is the *format* KDP wants, so a placeholder detector must not mistake `<p>` for
 #: a template hole. Only angle-bracket tokens with a space or underscore inside count.
 PLACEHOLDER_RE = re.compile(r"\{[a-z_]+\}|\[[^\]]*insert[^\]]*\]|<(?:placeholder|todo|tbd)[^>]*>", re.I)
+# Whole words, deliberately: `cure|heal|reverse` without boundaries reads "health" and "secure" as
+# treatment claims, and a checker that fires on ordinary English gets ignored when it fires for real.
+TREATMENT_RE = re.compile(
+    r"\b(cure|cures|cured|curing|heal|heals|healed|healing|reverse|reverses|reversed|reversing)\b"
+    r"|\btreats?\s+(insomnia|apnea|apnoea|diabetes|depression|cancer|addiction)\b"
+    r"|\b(cures?|treatment for)\s+(insomnia|apnea|apnoea|shift work)\b", re.I)
+# The banned thing is a money/outcome promise aimed at the buyer. "This will make the plan stick" is
+# not that, so the object has to be money or a gain, not any noun in the sentence.
+PROMISE_RE = re.compile(
+    r"\b(guarantee|guaranteed|guarantees)\b"
+    r"|\b(?:you(?:'|\u2019)?ll|you will|will)\s+(earn|make|save|double|net|clear)\b[^.]{0,24}?"
+    r"(?:\$|usd|\b\d{2,}\s*(?:/|per|a)\s*(?:day|month|week)|\b(?:dollars|a month|a day|per month)\b)"
+    r"|\b(?:earn|make|save)\s+\$\s*\d"
+    r"|\b(?:make|get)\s+your\s+money\s+back\b", re.I)
+
+
 BRAND_RE = re.compile(r"\b(amazon|kindle|apple|google|meta|tiktok|notion|reddit|costco)\b", re.I)
 CLINICIAN_RE = re.compile(r"\b(mayo clinic|cleveland clinic|harvard health|nhs|who|cdc)\b", re.I)
 
@@ -106,8 +122,16 @@ def validate_kdp(fields: dict[str, Any], *, keywords: list[str] | None = None,
             v.add(f"keyword[{i}]", "error", f"{len(k)} chars; the field caps at 49 — words past it are not indexed")
         if len(k.split()) > 6:
             v.add(f"keyword[{i}]", "warn", f"{len(k.split())} words; a phrase beats a sentence here")
-        if title and any(w.lower() in title.lower() for w in k.split() if len(w) > 3):
-            v.add(f"keyword[{i}]", "warn", "repeats a title word — KDP already indexes the title; spend the field on new words")
+        if title:
+            # What this is actually checking: a field spent on words the title already carries.
+            # "night shift sleep for nurses" repeats the title's "night shift" and is still a good
+            # field, because it adds three words the title does not have — Amazon does not index a
+            # phrase, it indexes words. A keyword that adds *nothing* new is the wasted one.
+            known = {w.lower() for w in re.findall(r"[A-Za-z][A-Za-z']{2,}", f"{title} {author}")}
+            new_words = {w.lower() for w in re.findall(r"[A-Za-z][A-Za-z']{2,}", k) if w.lower() not in known}
+            if not new_words and known:
+                v.add(f"keyword[{i}]", "warn", f"adds no word the title and author do not already "
+                                               f"carry ({k!r}) — that field buys you nothing")
         if BRAND_RE.search(k):
             v.add(f"keyword[{i}]", "error", f"contains a trademark ({BRAND_RE.search(k).group(0)}); Amazon rejects these")
         if re.search(r"\d+\s*star|best\s*seller|#1|free\s*shipping", k, re.I):
@@ -127,10 +151,12 @@ def validate_kdp(fields: dict[str, Any], *, keywords: list[str] | None = None,
         v.add("credentials", "error",
               "a credential appears in the listing. Only the operator can authorise that, and only if "
               "the licence is real and current — for this portfolio the author is a pen name, so it must go.")
-    if re.search(r"(guarantee[d]?|will|you'?ll|you will)\s+(earn|make|save|double|\$)", desc, re.I):
-        v.add("description", "error", "reads like an income or outcome promise; strip it and describe the method")
-    if re.search(r"cure|heal|reverse|treats?\s+(insomnia|apnea|diabetes|depression)", desc, re.I):
-        v.add("description", "error", "treatment claim in the description — this is the claim that gets books suppressed")
+    if PROMISE_RE.search(desc):
+        v.add("description", "error", f"reads like an income or outcome promise ({PROMISE_RE.search(desc).group(0)!r}); "
+                                      "strip it and describe the method")
+    if TREATMENT_RE.search(desc):
+        v.add("description", "error", f"treatment claim in the description ({TREATMENT_RE.search(desc).group(0)!r}) "
+                                      "— this is the claim that gets books suppressed")
     return v
 
 

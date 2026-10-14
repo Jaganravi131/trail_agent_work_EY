@@ -31,6 +31,20 @@ line in `robots.txt`. With it empty the build ships **no** canonical on purpose 
 a `<link rel="canonical">` is worse than none, because it tells Google to index a place that does not
 exist. `03-tool/index.html` used to carry one; that is why the tool's own canonical now comes from here.
 
+### Every key the builder reads
+
+| key | what it switches on | if you leave it alone |
+|---|---|---|
+| `base_url` | canonicals, `og:url`, `sitemap.xml`, `feed.xml`, absolute JSON-LD URLs, the breadcrumb node | the build ships none of them, deliberately |
+| `language` | `<html lang>`, `inLanguage`, the feed's `<language>`, and the ebook's `dc:language` (via `02-kdp/kdp-metadata.json`) | assumed `en`; a non-tag value fails the build |
+| `contact` | the footer's contact line | the footer says nothing; a site with a book for sale and no way to reach the author is a bad look, so fill it |
+| `author` | the JSON-LD author node — a `Person` with a name and nothing else | no author node; there are no credentials to claim, and none are invented |
+| `affiliate_hosts` | the disclosure banner + `rel="sponsored nofollow"` on matching links | no disclosure is injected, which is only safe while no affiliate link exists |
+| `site_name`, `site_description`, `home_h1`, `lede` | titles, descriptions, the homepage headline and its first line | the defaults in `site.py`, which are the copy now live |
+
+Nothing else is configurable by hand: `docs/` is generated, and the builder ignores a value it does
+not know rather than letting a typo look like a setting.
+
 ## A. GitHub Pages
 
 1. Repo → **Settings** → **Pages** → Source: **Deploy from a branch**.

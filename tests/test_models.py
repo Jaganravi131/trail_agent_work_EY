@@ -536,6 +536,69 @@ class ValidateTests(unittest.TestCase):
                                    "description_html": "<p>This book cures insomnia and treats apnea.</p>"})
         self.assertTrue(any("treatment claim" in i.message.lower() for i in v.errors))
 
+    def test_ordinary_words_are_not_treatment_claims(self):
+        # `heal` is inside "health", and `cure` is inside "secure". A rule that fires on the most
+        # ordinary noun in a wellness listing gets switched off the second it fires twice, so the
+        # rule is whole-words and this copy must be clean.
+        clean = ("<p>Evidence-based occupational health advice for people who work overnights. "
+                 "A secured blackout setup saves the cost of buying one, and the arithmetic here "
+                 "will make the plan stick.</p>")
+        v = validate.validate_kdp({"title": "The Night Shift Reset", "subtitle": "S", "author": "A",
+                                   "description_html": clean})
+        self.assertEqual([i.message for i in v.errors if "treatment" in i.message], [])
+        self.assertEqual([i.message for i in v.errors if "promise" in i.message], [])
+        for bad in ("This book cures insomnia.", "Reverses shift work damage.",
+                    "A guaranteed cure for sleep apnea.", "You'll earn $300 a month.",
+                    "Guaranteed results.", "You will make your money back."):
+            v = validate.validate_kdp({"title": "T", "subtitle": "S", "author": "A",
+                                       "description_html": f"<p>{bad}</p>"})
+            self.assertTrue(v.errors, f"missed: {bad}")
+
+    def test_a_keyword_sharing_a_title_word_is_fine_and_one_adding_nothing_is_not(self):
+        # Amazon indexes words, not phrases: "night shift sleep for nurses" earns its field even
+        # though the title says "Night Shift". "the night shift reset" buys nothing.
+        v = validate.validate_kdp({"title": "The Night Shift Reset", "subtitle": "S", "author": "A",
+                                   "description_html": "<p>" + "Copy. " * 20 + "</p>",
+                                   "keywords": ["night shift sleep for nurses", "shift work recovery",
+                                                "28 day plan", "working nurse schedule", "jet lag routine",
+                                                "sleep hygiene plan", "rotating shift tips"],
+                                   "categories": ["a", "b"]})
+        self.assertEqual([i.message for i in v.warnings if "adds no word" in i.message], [])
+        v = validate.validate_kdp({"title": "The Night Shift Reset", "subtitle": "S",
+                                   "author": "J. Arek Thorne",
+                                   "description_html": "<p>" + "Copy. " * 20 + "</p>",
+                                   "keywords": ["the night shift reset", "shift work recovery",
+                                                "28 day plan", "working nurse schedule", "jet lag routine",
+                                                "sleep hygiene plan", "rotating shift tips"],
+                                   "categories": ["a", "b"]})
+        self.assertTrue(any("adds no word" in i.message for i in v.warnings),
+                        [i.message for i in v.warnings])
+
+    def test_the_listing_file_is_gated_exactly_like_a_reader_facing_page(self):
+        """`wf validate` = platform limits + the compliance gate, on the copy a stranger reads."""
+        root = Path(__file__).resolve().parents[1]
+        good = subprocess.run([sys.executable, "-m", "wealforge", "validate",
+                               str(root / "02-kdp" / "kdp-metadata.json")],
+                              cwd=str(root), capture_output=True, text=True)
+        self.assertEqual(good.returncode, 0, good.stdout + good.stderr)
+        self.assertIn("gate on the listing copy: clean", good.stdout)
+        meta = json.loads((root / "02-kdp" / "kdp-metadata.json").read_text())
+        # Take the two safety lines back out — this is the blurb as it read before the gate was wired,
+        # and it is the exact case the rules exist for: health promises with no disclaimer attached.
+        meta["description_html"] = meta["description_html"].replace(
+            "This is educational, not medical advice — no diagnosis, no treatment, no dosing. ", "")
+        meta["description_html"] = meta["description_html"].replace(
+            "why you must never drive when you are drowsy", "the drive-home non-negotiables")
+        self.assertNotIn("not medical advice", meta["description_html"])
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "listing.json"
+            f.write_text(json.dumps(meta), encoding="utf-8")
+            bad = subprocess.run([sys.executable, "-m", "wealforge", "validate", str(f)],
+                                 cwd=str(root), capture_output=True, text=True)
+        self.assertEqual(bad.returncode, 1, bad.stdout)
+        self.assertIn("S1", bad.stdout, "a health listing with no 'not medical advice' line is refused")
+        self.assertIn("S2", bad.stdout, "a fatigue listing without the never-drive-drowsy rule is refused")
+
 
 # ------------------------------------------------------------ modelhub ----
 class ModelHubTests(unittest.TestCase):

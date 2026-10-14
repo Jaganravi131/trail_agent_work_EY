@@ -357,6 +357,14 @@ def cmd_run(args: argparse.Namespace) -> int:
                                                config=None, allow_fail=args.allow_fail,
                                                report="00-strategy/decisions/site-latest.md"))
     rc |= 0 if args.allow_fail else rc3
+    # The ebook is the paid product, so it gets the same treatment: rebuilt, and its report kept
+    # next to the site's. A chapter edit that never reaches the manuscript is how a stale book gets
+    # uploaded, and `--check` in CI is what stops that being a surprise on the customer's side.
+    print("\n— rebuild the ebook (EPUB) from 01-book/chapters/\n")
+    rc4 = commands.cmd_book(argparse.Namespace(db=args.db, out=None, check=False,
+                                                allow_fail=args.allow_fail, json=False,
+                                                report="00-strategy/decisions/book-latest.md"))
+    rc |= 0 if args.allow_fail else rc4
     print("\n" + "=" * 72 + "\n")
     rc |= cmd_report(argparse.Namespace(tracker=args.tracker, out="00-strategy/decisions/report-latest.md",
                                          days_live=30, cover_tested=False, db=args.db))

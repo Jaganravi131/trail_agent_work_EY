@@ -8,7 +8,7 @@ Everything a designer (or you, in Canva Free) needs. No creative judgment left o
 |---|---|---|
 | KDP ebook cover | 2,560 × 1,600 px (1.6:1), 72–300 dpi, JPEG/PNG, sRGB, <50 MB | Ebook only needs front |
 | KDP paperback, 6"×9", ~170 pages | Use KDP Covers Calculator → template for exact spine width | Spine text at 0.06" per page-count band; get exact number from KDP after upload |
-| Social/preview | 1,600 × 1,600 px square crop | Center-weighted, safe area 80% |
+| Social/preview | 1,600 × 1,600 px square crop | Centre-weighted, safe area 80% |
 
 ## Concept: "4:07 a.m., and the body thinks it's midnight"
 
@@ -62,7 +62,7 @@ Below that: three bullet "who this is for" lines, a barcode zone (KDP places it 
 
 **Spine (6"×9", ~170 pages ≈ 0.40"):** navy. Title stacked or rotated 90°, off-white, 10 pt. Author last name at foot. No tagline.
 
-## Color psychology, stated so you can defend it if you deviate
+## Colour psychology, stated so you can defend it if you deviate
 
 Navy = night, authority, low-arousal. Amber = the low-blue end of the spectrum, the part a body clock reacts to least; it also reads as "warm interior / safety" against cold dark. Off-white type on navy tests better than white for readability at thumbnail scale because it lowers glare. Deliberately excluded: bright teal gradients, white coats, clip-art moons, cartoon nurses, photos of smiling people sleeping. Those signal "clinic pamphlet" or "AI template." Any stock photo of a nurse in a hospital must be commercially licensed for print; if you can't verify the license, use the abstract version above. That is why the recommended cover has **zero photography** — it removes the entire licensing risk and still looks intentional.
 

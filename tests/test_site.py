@@ -294,6 +294,37 @@ class HeadMetadata(unittest.TestCase):
         self.assertTrue(m, f"no structured data on {rel}")
         return json.loads(m.group(1)), page
 
+    def _rebuild_with_config(self, **over):
+        """Fresh tree, one config key changed — the config is read at build time, so a test that
+        changes it cannot reuse setUp's output."""
+        root = Path(tempfile.mkdtemp(prefix="wf-site-cfg-"))
+        try:
+            _write(root, "04-seo/articles/01-alpha.md", ART_A)
+            _write(root, "04-seo/articles/02-beta.md", ART_B)
+            cfg = {"site_name": "Test", "base_url": "", "language": "en-GB"}
+            cfg.update(over)
+            _write(root, "config/site.json", json.dumps(cfg))
+            out = root / "docs"
+            return site.build(root, out_dir=out), out
+        finally:
+            self._tmp = root
+
+    def test_the_language_in_the_config_reaches_the_document_not_just_the_schema(self):
+        # `lang=` is what a screen reader uses to pick a pronunciation and what the browser uses to
+        # hyphenate. A key that only reaches JSON-LD would be half a setting.
+        res, out = self._rebuild_with_config(language="pt-BR")
+        self.assertTrue(res.ok, res.errors)
+        page = (out / "alpha" / "index.html").read_text()
+        self.assertIn('<html lang="pt-BR">', page)
+        self.assertIn('"inLanguage": "pt-BR"', page)
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def test_a_language_that_is_not_a_language_tag_fails_the_build(self):
+        res, _ = self._rebuild_with_config(language="English")
+        self.assertFalse(res.ok)
+        self.assertTrue(any("not a language tag" in e for e in res.errors), res.errors)
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
     def test_every_built_page_carries_the_card_tags(self):
         for rel in ("alpha/index.html", "beta/index.html", "index.html"):
             head = (self.out / rel).read_text().split("</head>")[0]

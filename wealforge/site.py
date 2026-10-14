@@ -19,6 +19,7 @@ folder instead of trusting a human to rebuild it.
 from __future__ import annotations
 
 import html
+import unicodedata
 import json
 import posixpath
 import re
@@ -114,6 +115,16 @@ class LinkSink:
         self.affiliate: list[tuple[str, str]] = []     # (page slug, url)
 
 
+WORDS_RE = re.compile(r"[A-Za-z0-9'\u2019-]+")
+
+
+def count_words(text: str) -> int:
+    """How long is this? One answer, because `wf price`, the page estimate and the site's thinness
+    warning all read the same number — and a second definition two words apart is how a document
+    ends up explaining why its own figures disagree."""
+    return len(WORDS_RE.findall(text))
+
+
 def render_inline(src: str, page_slug: str, links: LinkSink, aff_hosts: tuple[str, ...]) -> str:
     """Inline markdown → HTML. Escaping happens first, so a stray `<` in prose stays prose."""
     out = html.escape(src, quote=False)
@@ -152,11 +163,22 @@ def render_inline(src: str, page_slug: str, links: LinkSink, aff_hosts: tuple[st
     return _LINK.sub(link_sub, out)
 
 
-def render_body(body: str, page_slug: str, links: LinkSink, aff_hosts: tuple[str, ...]) -> tuple[str, list[str]]:
+def heading_anchor(text: str) -> str:
+    """Heading text → id. Kept ASCII and short because it ends up in an EPUB nav and a
+    URL fragment; an accented or punctuated id is legal but miserable to type."""
+    t = re.sub(r"[*_`\[\]()#|]", " ", text)
+    t = unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode("ascii")
+    t = re.sub(r"[^a-z0-9]+", "-", t.lower()).strip("-")
+    return t or "section"
+
+
+def render_body(body: str, page_slug: str, links: LinkSink, aff_hosts: tuple[str, ...],
+                anchor_mode: str = "page") -> tuple[str, list[str]]:
     """Block-level markdown subset → HTML. Returns (html, headings) for the TOC/word counts."""
     lines = body.split("\n")
     out: list[str] = []
     heads: list[str] = []
+    used_anchors: dict[str, int] = {}
     i = 0
     while i < len(lines):
         line = lines[i]
@@ -173,7 +195,15 @@ def render_body(body: str, page_slug: str, links: LinkSink, aff_hosts: tuple[str
             level = len(m.group(1))
             text = m.group(2).strip()
             heads.append(text)
-            anchor = posixpath.basename(page_slug.strip("/")) or "top"
+            if anchor_mode == "heading":
+                # Unique per heading, so an e-reader's table of contents can point at each one.
+                anchor = heading_anchor(text)
+                n = used_anchors.get(anchor, 0)
+                used_anchors[anchor] = n + 1
+                if n:
+                    anchor = f"{anchor}-{n + 1}"
+            else:
+                anchor = posixpath.basename(page_slug.strip("/")) or "top"
             out.append(f'<h{level} id="{anchor}">{render_inline(text, page_slug, links, aff_hosts)}</h{level}>')
             i += 1
             continue
@@ -191,6 +221,19 @@ def render_body(body: str, page_slug: str, links: LinkSink, aff_hosts: tuple[str
                 trs.append("<tr>" + "".join(f"<td>{render_inline(c, page_slug, links, aff_hosts)}</td>"
                                             for c in r) + "</tr>")
             out.append('<table><thead><tr>' + th + "</tr></thead><tbody>" + "".join(trs) + "</tbody></table>")
+            continue
+        if strip.startswith("```"):
+            # Fenced code. The book's fridge card and log grid are ASCII, and a reflowed
+            # monospace box is not a cute failure — it is unreadable on a 600 px e-reader.
+            lang = strip[3:].strip()
+            i += 1
+            buf = []
+            while i < len(lines) and not lines[i].strip().startswith("```"):
+                buf.append(lines[i].rstrip())
+                i += 1
+            i += 1                                    # consume the closing fence (or end of body)
+            cls = f' class="lang-{html.escape(lang, quote=True)}"' if lang else ""
+            out.append(f"<pre><code{cls}>" + html.escape("\n".join(buf), quote=False) + "</code></pre>")
             continue
         if strip.startswith(">"):
             quote = []
@@ -216,8 +259,8 @@ def render_body(body: str, page_slug: str, links: LinkSink, aff_hosts: tuple[str
             continue
         para = [strip]
         i += 1
-        while i < len(lines) and lines[i].strip() and not re.match(r"^(#{1,4}\s|[-*]\s|\d+\.\s|\||>|!)",
-                                                                   lines[i].strip()):
+        while i < len(lines) and lines[i].strip() and not re.match(
+                r"^(#{1,4}\s|[-*]\s|\d+\.\s|\||>|!|```)", lines[i].strip()):
             para.append(lines[i].strip())
             i += 1
         out.append("<p>" + render_inline(" ".join(para), page_slug, links, aff_hosts) + "</p>")
@@ -298,7 +341,7 @@ def _read_pages(root: Path, links: LinkSink, aff: tuple[str, ...],
                 r"^\d+[-_]", "", src.stem).replace("_", "-").lower()
             slug = slug.strip("/") + "/"
             rendered, heads = render_body(body, slug, links, aff)
-            words = len(re.findall(r"[A-Za-z0-9'\u2019-]+", body))
+            words = count_words(body)
             pages.append(Page(slug=slug, src=src, title=str(meta["title"]),
                               description=str(meta["description"]),
                               last_reviewed=str(meta.get("last_reviewed", "")),
@@ -755,6 +798,18 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
                             f"placeholders: {', '.join(sorted(set(res.photos_needed))[:4])}")
 
     # ---- write (sorted, fixed content: byte-identical rebuilds are the point)
+    lang = str(cfg.get("language", "en") or "en")
+    if not re.fullmatch(r"[a-z]{2}(-[A-Za-z0-9]{2,8})*", lang):
+        # The value is copied into every page's lang attribute, the JSON-LD inLanguage and the feed's
+        # <language>, so "English" is not a cosmetic slip — it is a site-wide defect with a typo in it.
+        res.errors.append(f'config/site.json: language {lang!r} is not a language tag — expected '
+                          f'"en-GB", "en-US", "pt-BR"')
+
+    def with_lang(text: str) -> str:
+        # `lang` on the document, not only in the schema: a screen reader picks its pronunciation
+        # from here, and so does the browser's hyphenation. `<html lang="en">` is a shrug.
+        return text.replace('<html lang="en">', f'<html lang="{lang}">', 1)
+
     if not check:
         out.mkdir(parents=True, exist_ok=True)
         for ref, src in sorted(have.items()):
@@ -764,10 +819,8 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
         for p in pages:
             target = out / p.out_path
             target.parent.mkdir(parents=True, exist_ok=True)
-            text = p.html if p.kind in ("index", "tool") else p.html
-            if p.kind == "tool":
-                text = tool_html
-            target.write_text(text, encoding="utf-8")
+            text = tool_html if p.kind == "tool" else p.html
+            target.write_text(with_lang(text), encoding="utf-8")
             res.written.append(p.out_path)
         (out / "styles.css").write_text(CSS, encoding="utf-8")
         res.written.append(Path("styles.css"))
@@ -810,7 +863,7 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
             related="", footer=_footer(cfg))
         # The shell is written for pages one folder deep (/slug/index.html), so a root-level
         # file has to drop the "../" prefix or its stylesheet and links point above the site.
-        (out / "404.html").write_text(page404.replace('="../', '="')
+        (out / "404.html").write_text(with_lang(page404).replace('="../', '="')
                                       .replace('href=""', 'href="./"'), encoding="utf-8")
         # favicon + the vector original of the social card: copied because they are assets the site
         # links to, not prose, and the export step is easier when the source file is right there.

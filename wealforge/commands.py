@@ -10,12 +10,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from datetime import date
 from pathlib import Path
 from typing import Any
 
-from . import dataset, evalkit, finetune, gate, llm, modelhub, models, pipeline, site, store, validate
+from . import book, dataset, evalkit, finetune, gate, llm, modelhub, models, pipeline, site, store, validate
 
 
 # ----------------------------------------------------------------- model ----
@@ -173,6 +174,38 @@ def cmd_site(args: argparse.Namespace) -> int:
     return 0 if (res.ok or args.allow_fail) else 1
 
 
+def cmd_book(args: argparse.Namespace) -> int:
+    """Build (and optionally enforce) the uploadable ebook.
+
+    The value is not the zip — pandoc makes a zip. It is that `--check` can answer the only question
+    that matters before an upload: does this file still match the chapters, and does anything in it
+    embarrass us in front of a paying stranger?
+    """
+    res = book.build_book(".", out_dir=args.out or None, check=args.check)
+    if args.json:
+        print(json.dumps(res.as_dict(), indent=2))
+        return 0 if (res.ok or args.allow_fail) else 1
+    md = book.report_markdown(res, args.out or book.DEFAULT_OUT)
+    if args.report:
+        rp = Path(args.report)
+        rp.parent.mkdir(parents=True, exist_ok=True)
+        rp.write_text(md, encoding="utf-8")
+    print(f"book: {len(res.chapters)} chapter(s), {res.words:,} words, ~{res.pages} print pages, "
+          f"{res.size_kb} KB  ·  {len(res.errors)} error(s), {len(res.warnings)} warning(s)"
+          + ("  [--check: nothing written]" if args.check else ""))
+    for e in res.errors:
+        print(f"  [ERROR] {e}", file=sys.stderr)
+    for w in res.warnings:
+        print(f"  [warn ] {w}")
+    if not args.check and res.ok:
+        print(f"  → {res.epub}   (open it in Calibre or Thorium before upload — both free)")
+    with store.open_store(args.db) as st:
+        st.event("book", str(res.epub), {"chapters": len(res.chapters), "words": res.words,
+                                        "errors": len(res.errors), "warnings": len(res.warnings),
+                                        "size_kb": res.size_kb, "check": bool(args.check)})
+    return 0 if (res.ok or args.allow_fail) else 1
+
+
 def cmd_eval(args: argparse.Namespace) -> int:
     if args.compare:
         return _eval_compare(args)
@@ -319,11 +352,36 @@ def cmd_approve(args: argparse.Namespace) -> int:
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
+    """Check a listing-metadata file: platform limits *and* the compliance gate.
+
+    The gate normally reads markdown and HTML, and deliberately skips `.json` — most JSON in this repo
+    is config, and `gate_rules.json` contains the very phrases it hunts for. A listing file is the
+    opposite case: it is prose a stranger reads, in the shape of data. So the one command that exists
+    to check it runs the copy through the same rules a page would face.
+    """
     fields = json.loads(Path(args.file).read_text(encoding="utf-8")) if args.file else {}
     v = validate.validate_kdp(fields, keywords=fields.get("keywords"),
                               categories=fields.get("categories"))
+    copy_fields = "\n".join(str(fields.get(k, "")) for k in
+                             ("title", "subtitle", "author", "series", "description", "description_html"))
+    copy_fields += "\n" + "\n".join(str(k) for k in (fields.get("keywords") or []))
+    copy_fields += "\n" + "\n".join(str(c) for c in (fields.get("categories") or []))
+    # audience forced to "reader": a listing is the one place where an unknown file type must
+    # not inherit the internal-document leniency, because the stranger cannot see the difference.
+    rep = gate.evaluate_text(re.sub(r"<[^>]+>", " ", copy_fields),
+                             target=args.file or "<text>", audience="reader")
     print(v.render())
-    return 0 if v.ok else 1
+    if rep.errors or rep.warnings:
+        print(f"  gate on the listing copy: {len(rep.errors)} error(s), {len(rep.warnings)} warning(s)")
+        for f in rep.findings:
+            print(f"    [{f.severity:5}] {f.rule_id} line {f.line}: {f.title}")
+    else:
+        print("  gate on the listing copy: clean")
+    ok = v.ok and not rep.errors
+    if not ok and not args.allow_fail:
+        print("  fix the JSON, not this message — the backend limit and the compliance rule are both "
+              "real, and neither is negotiable in a listing")
+    return 0 if (ok or args.allow_fail) else 1
 
 
 # ----------------------------------------------------------------- wiring ----
@@ -374,6 +432,18 @@ def add_commands(sub: Any) -> None:
     sp.add_argument("--db")
     sp.set_defaults(fn=cmd_site)
 
+    sp = sub.add_parser("book", help="build the uploadable ebook (EPUB) from 01-book/chapters/")
+    sp.add_argument("--out", help=f"output folder (default {book.DEFAULT_OUT})")
+    sp.add_argument("--check", action="store_true",
+                    help="verify without writing: stale manuscript, placeholders, dangling TOC "
+                         "anchors, malformed XML and a cover whose pixels disagree with its name all fail")
+    sp.add_argument("--allow-fail", dest="allow_fail", action="store_true",
+                    help="print the findings but exit 0")
+    sp.add_argument("--report", help="also write a build report here")
+    sp.add_argument("--json", action="store_true")
+    sp.add_argument("--db")
+    sp.set_defaults(fn=cmd_book)
+
     sp = sub.add_parser("eval", help="grade the work: task cases, adversarial battery, style metrics")
     sp.add_argument("--cases", default="config/eval_prompts.json")
     sp.add_argument("--grade", nargs="*", help="files/dirs to style-grade (offline, no model needed)")
@@ -415,6 +485,8 @@ def add_commands(sub: Any) -> None:
     sp.add_argument("--db")
     sp.set_defaults(fn=cmd_approve)
 
-    sp = sub.add_parser("validate", help="check a KDP metadata JSON against platform limits")
+    sp = sub.add_parser("validate", help="check a KDP metadata JSON: platform limits + the compliance gate")
     sp.add_argument("file")
+    sp.add_argument("--allow-fail", dest="allow_fail", action="store_true",
+                    help="print the findings but exit 0")
     sp.set_defaults(fn=cmd_validate)

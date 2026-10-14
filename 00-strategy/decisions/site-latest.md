@@ -15,7 +15,7 @@
 | `/what-to-eat-on-a-night-shift/` | article | 1414 | 4 |
 | `/` | index | 0 | 0 |
 | `/about/` | page | 527 | 0 |
-| `/book/` | page | 1022 | 5 |
+| `/book/` | page | 1033 | 5 |
 | `/editorial-policy/` | page | 730 | 0 |
 | `/planner/` | tool | 0 | 0 |
 

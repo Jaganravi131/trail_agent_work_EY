@@ -20,7 +20,7 @@ No part of this book may be reproduced in any form without written permission fr
 
 This book is educational. It is not medical advice, not a diagnosis, and not a treatment for any condition. It does not treat, cure or prevent disease. It contains no supplement or drug recommendations presented as therapy.
 
-Shift work interacts with real physiology. If you have — or suspect you have — a sleep disorder, sleep apnea (snoring plus waking unrefreshed is the classic tell, and it is rampant and undertreated in shift populations), depression, a cardiac condition, diabetes, or a gastrointestinal diagnosis, talk to a clinician before changing anything. If you take any prescription medication, ask your pharmacist specifically about timing: several common drugs have circadian-dependent absorption or interaction profiles, and a pharmacist will answer that for free in ninety seconds.
+Shift work interacts with real physiology. If you have — or suspect you have — a sleep disorder, sleep apnoea (snoring plus waking unrefreshed is the classic tell, and it is rampant and undertreated in shift populations), depression, a cardiac condition, diabetes, or a gastrointestinal diagnosis, talk to a clinician before changing anything. If you take any prescription medication, ask your pharmacist specifically about timing: several common drugs have circadian-dependent absorption or interaction profiles, and a pharmacist will answer that for free in ninety seconds.
 
 Two hard safety rules override everything in these pages:
 

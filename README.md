@@ -11,15 +11,17 @@ Working asset library produced by **WealthForge** — a zero-capital income oper
 | `00-strategy/01-IDEA-SCORECARD.md` | 10 ideas scored, why these 2 won, what was rejected and why |
 | `00-strategy/02-REVENUE-MODEL.md` | conservative / base / optimistic, with assumptions you can falsify |
 | `00-strategy/03-90-DAY-ROADMAP.md` | the human operator's schedule, day by day, with copy-paste account instructions |
-| **`01-book/manuscript.md`** | **the finished book, ~11,600 words, EPUB-ready** |
-| `01-book/chapters/` | the same manuscript as 11 chapter files (edit here, then rebuild) |
-| `01-book/build.sh` | pandoc → EPUB + print PDF + DOCX |
+| **`01-book/chapters/`** | **the finished book, 11 files, 11,262 words** — edit here, then `./wf book` |
+| `01-book/manuscript.md` | the generated aggregate the pandoc paths read (never hand-edited) |
+| `01-book/build.sh` | pandoc → print PDF + DOCX (the EPUB needs no installs: `./wf book`) |
 | `02-kdp/01-COVER-BRIEF.md` | art-director spec: layout, hex colours, sizes, back cover, spine |
 | `02-kdp/02-KDP-BACKEND-UPLOAD.md` | title, subtitle, description HTML, 7 keywords, categories, pricing, AI-declaration guidance |
+| `02-kdp/kdp-metadata.json` | those listing fields as data: `./wf validate` checks the limits, `./wf book` puts the same values in the EPUB |
 | `02-kdp/03-LAUNCH-SEQUENCE.md` | the 30-day launch, priced pulses, KDP Select mechanics, what to do on day 1 vs day 30 |
 | `03-tool/index.html` | **a working free web app.** Single file, no dependencies, no tracking, offline-capable |
-| `04-seo/01-KEYWORD-MAP.md` | 20+ clusters, tiered, with the 12-page site architecture |
-| `04-seo/articles/` | 3 finished pillar articles, ~1,700 words each, with meta + internal links |
+| `04-seo/01-KEYWORD-MAP.md` | 20+ clusters, tiered, with the 12-page site architecture and the E-E-A-T rules that page must satisfy |
+| `04-seo/articles/` | 9 finished articles, 1,300–2,050 words each, with meta + internal links |
+| `04-seo/pages/` | about, editorial policy and the book's sales page — identity, not SEO bait |
 | `05-marketing/01-CONTENT-CALENDAR.md` | 30 days, **every post written and paste-ready** |
 | `06-tracking/` | the weekly CSV + how to read it |
 | `07-risks/` | compliance rules, and the diagnosis tree for when numbers don't move |
@@ -39,9 +41,19 @@ Tested headlessly across 9 rota patterns (12h nights, 4-on-4-off, 16h, day shift
 ## Build the book
 
 ```bash
-bash 01-book/build.sh            # needs pandoc locally
+./wf book                            # EPUB, standard library only — no pandoc, no installs
+./wf book --check                    # refuse a stale manuscript, a placeholder or a bad cover
+bash 01-book/build.sh                # the print PDF + DOCX, which do need pandoc + a LaTeX engine
 ```
-or push and let `.github/workflows/build-book.yml` do it with the `pandoc/core:3` container, then download the `night-shift-reset-book-files` artifact — no local toolchain, no cost.
+
+`./wf book` renders the chapters straight into a valid EPUB3 (mimetype first and stored, `content.opf`
+with a `dcterms:modified`, a real nav + NCX, the ASCII fridge cards preserved as `<pre>`), rebuilds
+byte-for-byte, and embeds a cover only if `02-kdp/cover-2560x1600.jpg` exists *and measures what its
+name claims*. That file is what you upload to KDP: the ebook cover is a separate upload there anyway.
+
+Or push and let `.github/workflows/build-book.yml` do it — the EPUB job runs on a plain runner with
+this same code, the DOCX job uses the `pandoc/core:3` container — then download the
+`night-shift-reset-epub` artifact. No local toolchain, no cost.
 
 ## The agent itself — `wealforge/`
 
@@ -54,7 +66,9 @@ default; hosted APIs need an explicit `WEALFORGE_ALLOW_PAID=1`.
 ./wf score          # pre-screen 17 disqualifiers → score the pool → 00-strategy/decisions/
 ./wf pick --build   # select top N; write brief + cover spec + KDP backend + calendar
 ./wf gate 01-book --bundle    # compliance/integrity gate — exit 1 on any error
-./wf price --words 11566      # royalty bands, delivery fee, print cost, scenarios, traffic math
+./wf book             # the uploadable EPUB from 01-book/chapters/ (stdlib only)
+./wf price --words 11262      # royalty bands, delivery fee, print cost, scenarios, traffic math
+./wf validate 02-kdp/kdp-metadata.json   # KDP's field limits, before the backend turns red at 11pm
 ./wf report         # trends → diagnosis tree → exactly ONE experiment to run
 ./wf today          # this day's human actions from the 90-day schedule
 ./wf run            # the whole loop (what CI runs weekly)
@@ -64,10 +78,10 @@ default; hosted APIs need an explicit `WEALFORGE_ALLOW_PAID=1`.
 ./wf finetune       # QLoRA/Colab/Axolotl/LLaMA-Factory configs into training/
 ./wf eval --self-check              # style + gate grades on the committed assets, no model needed
 ./wf site                           # build docs/ — the folder you actually publish (./wf site --check to verify only)
-python3 -m unittest discover -s tests -q     # 158 tests, no network
+python3 -m unittest discover -s tests -q     # 246 tests, no network
 ```
 
-Nineteen modules; `wealforge/README.md` has the architecture and the extension points, and
+Twenty-one modules; `wealforge/README.md` has the architecture and the extension points, and
 `wealforge/FINE-TUNING.md` covers the model layer, the corpus rules and the eval harness. The
 load-bearing behaviours, all covered by tests:
 

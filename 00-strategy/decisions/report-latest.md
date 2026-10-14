@@ -1,4 +1,4 @@
-# Metrics report — 12 weeks, day 30
+# Metrics report — 12 weeks, day 1
 
 | week | amazon_reviews_new | email_adds | email_subscribers | gumroad_sales | kdp_clicks_to_store | kdp_impressions | kkenp_pages | reviews_total |
 |---|---|---|---|---|---|---|---|---|
