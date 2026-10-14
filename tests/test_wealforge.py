@@ -135,7 +135,11 @@ class TestGate(unittest.TestCase):
         safeguards down on the exact copy that needs them: a KDP blurb is reader-facing prose wearing a
         `.json` extension. `wf validate` forces the audience; this keeps the hint list from quietly
         making that moot."""
-        self.assertEqual(gate.audience_of("02-kdp/kdp-metadata.json"), "reader")
+        # By path alone the listing *is* internal — everything under `02-kdp/` is operator paperwork.
+        # That is precisely why `wf validate` forces the audience when it reads the copy: the file a
+        # stranger reads must not inherit the folder's leniency. (The forced audience is exercised by
+        # test_the_listing_file_is_gated_exactly_like_a_reader_facing_page, which asserts S1/S2 fire.)
+        self.assertEqual(gate.audience_of("02-kdp/kdp-metadata.json"), "internal")
         self.assertEqual(gate.audience_of("CHANGELOG.md"), "internal")     # a build note, not advice
         self.assertEqual(gate.audience_of("04-seo/articles/05-new.md"), "reader")
         for hint in gate.INTERNAL_HINTS:
