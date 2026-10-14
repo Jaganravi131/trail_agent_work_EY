@@ -51,8 +51,8 @@ Ten ideas, scored 1–5 on each axis. Weighted total out of 100.
 |---|---|
 | "10 sleep tips" ebook | Generic. Zero reason to buy from an unknown author. |
 | Supplement/nootropic stack recommendations | Health-harm risk, FTC exposure, unverifiable claims. Excluded by constraint. |
-| "Cure shift work sleep disorder" positioning | Disease-treatment claim. Not made anywhere in the manuscript. |
-| Scraping competitor reviews for keywords | TOS violation on Amazon. Simulated demand analysis only. |
+| "Cure shift work sleep disorder" positioning | Disease-treatment claim. Not made anywhere in the manuscript. <!-- gate:allow M1 M2 — this row records the refusal, it is not the claim --> |
+| Scraping competitor reviews for keywords | TOS violation on Amazon. Simulated demand analysis only. <!-- gate:allow X1 — a rejected option, recorded so it stays rejected --> |
 | Paid ads to validate faster | Costs money. |
 | Buying a $97 "book launch" course | Costs money. Everything needed is in this folder. |
 

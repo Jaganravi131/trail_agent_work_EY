@@ -91,14 +91,14 @@ prints right now (it moves with every asset, so treat the numbers as today's, no
 mechanism's):
 
 ```
-fine-tune recommendation: NOT YET — 92 SFT examples and 0 preference pairs is below
+fine-tune recommendation: NOT YET — 117 SFT examples and 0 preference pairs is below
 the floor (150/40). A LoRA on this would mostly learn to imitate formatting while
 degrading instruction-following, and you would have no way to tell the difference at
 40 examples.
 ```
 
-Two things that number means, and one it doesn't. It means the corpus is 92 gate-passing
-sections, 58 short of the floor. It means DPO is empty because preference pairs need a
+Two things that number means, and one it doesn't. It means the corpus is 117 gate-passing
+sections, 33 short of the floor. It means DPO is empty because preference pairs need a
 model draft *and* the human-corrected final for the same section, and nothing has been
 through that loop yet — that is the reason the DPO half is 0, not a filter to relax. It
 does **not** mean the training plan is premature in kind: `wf finetune` still writes
@@ -109,9 +109,14 @@ would be the kind of move this whole repo exists to prevent.
 
 **What the corpus is.** `wealforge/dataset.py` splits committed, **gate-passing** assets
 into sections and writes ShareGPT rows. The include list is `01-book/chapters/*.md`
-and `04-seo/articles/*.md`, deliberately: `04-seo/pages/` holds the about and
-editorial-policy copy, which is a legal surface rather than a style exemplar, and mixing
-it in would teach an adapter to write disclaimers instead of sections. Eligibility fails closed: a file that trips the
+and `04-seo/articles/*.md`, deliberately: `04-seo/pages/` holds the about page, the
+editorial policy and the sales page — legal and commercial surfaces, not style exemplars,
+and mixing them in would teach an adapter to write disclaimers and copy instead of sections.
+The boundary is a judgement about the *file*, not the folder, so it gets revisited when a
+page stops being a page: two operational how-tos that started life in `pages/` were moved to
+`articles/` on 2026-10-14 because they read like the other articles, and their 12 examples (105 → 117)
+came with them. Growing the count by reclassifying a sales page would be the cheat this
+floor exists to catch, and `dataset.recommend()` would still say NOT YET. Eligibility fails closed: a file that trips the
 gate is excluded and counted (`dataset/excluded.json`, with rule ids), and if
 `config/approval.json` has entries then only content-hash-matching, operator-signed files
 are admitted — edit a file after sign-off and it drops out of the corpus rather than

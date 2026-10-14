@@ -46,9 +46,19 @@ CLICHE_LISTICLE = re.compile(r"(?:^|[.!?]\s+[#>*\-\s]*)[Ww]hether you['’]?re a
 #: grew to include degrees, grams, kcal, ml and cups because this corpus writes room temperature,
 #: portion sizes and coffee volumes — a grader blind to "18–20 °C" undercounts precisely the copy
 #: that follows the house rule about a cool room, which is how a checker starts getting ignored.
-NUMERIC = re.compile(r"\b\d+(?:[.,]\d+)?\s?(?:%|percent|mg|g|kg|°?[cf]\b|kcal|kilocalories?|calories?|"
-                     r"cups?|oz|servings?|ml|lit(?:er|re)s?|grams?|hours?|hrs?|min(?:utes?)?|days?|weeks?|"
-                     r"words?|pages?|reps?|units?|\$)|\$?\b\d{1,3}(?:,\d{3})+\b", re.I)
+#: A quantity counts when it carries a unit a reader could act on. The optional hyphen matters more
+#: than it looks: this corpus writes "90-minute nap", "3-hour step" and "200-mg dose", and a counter
+#: that only sees "90 minutes" under-counts every compound unit in the project. `seconds` is in the set because
+#: the site's own instructions are in seconds (earplug expansion, the 20-second hold) — the counter
+#: being blind to a unit the copy is told to use produces a warning about thin prose that isn't thin.
+NUMERIC = re.compile(r"\b\d+(?:[.,]\d+)?\s?-?\s?(?:%|percent|mg|g|kg|°?[cf]\b|kcal|kilocalories?|calories?|"
+                     r"cups?|oz|servings?|ml|lit(?:er|re)s?|grams?|hours?|hrs?|min(?:utes?)?|sec(?:onds)?\b|"
+                     r"days?|weeks?|words?|pages?|reps?|units?|\$|"
+                     # Length, because this project's own guidance is in lengths — "overlap the frame by
+                     # 10–15 cm", "2–5 cm past the sill". A specificity proxy that can't see the unit the
+                     # copy is written in flags a precise page as a vague one. Bare `in` is deliberately
+                     # absent: "1 in the morning" would read as one inch.
+                     r"cm|mm|km|met(?:er|re)s?|m\b|feet|ft|inches?|inch)|\$?\b\d{1,3}(?:,\d{3})+\b", re.I)
 SECOND_PERSON = re.compile(r"\b(you|your|you['’]re|yourself)\b", re.I)
 HEDGE = re.compile(r"\b(may|might|could|some research|suggests|generally|typically|often|many people|"
                    r"experts say|studies show|it depends)\b", re.I)

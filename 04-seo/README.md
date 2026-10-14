@@ -8,7 +8,7 @@ build except by editing it. `./wf site` turns these markdown files plus `../03-t
 |---|---|
 | `01-KEYWORD-MAP.md` | Query research → the asset that answers each one, the site tree, and the internal-linking rule. Not published; it is the plan the published pages are kept in sync with |
 | `02-DEPLOY.md` | How to get `docs/` live in ~20 minutes for $0, the checks to run afterwards, and where the domain is configured |
-| `articles/` | The pillar articles (five so far). Reader-facing, long, cited, and gate-scanned |
+| `articles/` | The pillar articles (seven so far). Reader-facing, long, cited, and gate-scanned |
 | `pages/` | Home-adjacent pages that aren't articles: `/about/`, `/editorial-policy/`, `/book/`, and the two commercial how-tos |
 | `images/` | Does not exist yet, deliberately. Photo references point here; until a file lands, the build renders a labelled "photo to supply" box instead of a broken icon |
 

@@ -5,7 +5,7 @@ description: "A worked eight-day sleep plan for four nights on and four off, why
 primary: 4 on 4 off night shift sleep schedule
 secondary: [4 on 4 off night shift schedule, 4 on 4 off sleep plan, nights then days off schedule, how to recover after 4 nights, 3 on 3 off night shift sleep]
 wordcount: ~1,900
-internal_links: ["/planner/", "/nap-before-shift/", "/sleep-after-night-shift/", "/caffeine-on-night-shift/", "/book/"]
+internal_links: ["/planner/", "/days-off-reset/", "/nap-before-shift/", "/sleep-after-night-shift/", "/caffeine-on-night-shift/", "/book/"]
 last_reviewed: 2026-10-13
 ---
 
@@ -77,6 +77,8 @@ If you have a diagnosed condition that affects scheduling, that's a different co
 - Your mood is low across the whole off block rather than just tired.
 - The roster is hurting your safety at work and no amount of scheduling resolves it. That's an occupational-safety matter, not a personal sleep failure.
 - You're thinking about any medication or supplement to shift your timing. Ask a pharmacist or clinician first, with your own medication list in hand; this site gives no dosing plans for anything, deliberately.
+
+If your rota isn't 4-on-4-off, the same two-handover arithmetic — including when a flip is mathematically impossible and holding is the correct answer — is in [days off after nights](/days-off-reset/).
 
 One rule outranks every schedule on this page: **never drive when you're drowsy.** You can't self-assess it reliably, because the part of the brain that would notice is the part that's asleep. 200 mg of caffeine and a 20-minute nap buy about 30 minutes of mitigation, which is enough to get yourself to a safe stop and nowhere near enough to make a 40-mile drive home after night four.
 

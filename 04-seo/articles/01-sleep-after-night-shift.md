@@ -5,7 +5,7 @@ description: "Why you're wired at 8 a.m., the 3-2-1-0 countdown for coming home 
 primary: how to sleep after a night shift
 secondary: [why can't I sleep after night shift, sleep after 12 hour night shift, day sleeping setup, blackout curtains vs eye mask]
 wordcount: ~1,750
-internal_links: ["/what-to-eat-on-a-night-shift/", "/caffeine-on-night-shift/", "/planner/", "/book/"]
+internal_links: ["/what-to-eat-on-a-night-shift/", "/caffeine-on-night-shift/", "/earplugs-day-sleeping/", "/planner/", "/book/"]
 last_reviewed: 2026-10-11
 ---
 
@@ -76,6 +76,7 @@ Score these before spending money. If you're failing at light and noise, no supp
 
 1. **Light gaps, not light levels.** Most "blackout" curtains are lined fabric with gaps at the sides and top. At pillow height, those gaps are what wakes people. Fix order: a rolled towel or draught excluder at the bottom of the door (kills hall light and street noise at once), then a duvet or blanket pinned or taped over the window, then aluminium foil matte-side out taped to the glass. Twelve minutes of manual work; blocks more than most cheap curtains. If you rent, a bit of tape residue on glass comes off with hot water and a blade.
 2. **Earplugs, inserted properly.** Foam plugs fail far more often from insertion than from quality: roll thin, pull the top of your ear up and back, insert, hold 20 seconds until it expands. If you've "tried them and they don't work," you probably tried them incorrectly for 30 seconds.
+   If the plugs are the problem rather than the noise — one ear sealed, one not, or one that falls out by 04:00 — the fitting tests and the material trade-offs are in [earplugs for day sleeping](/earplugs-day-sleeping/).
 3. **A steady noise floor beats silence.** You can't control a household's daytime — lawnmowers, the bus stop, the recycling lorry — so mask it: a fan, or a rain loop on an old phone through a cheap speaker, just above the street level. Steady background swamps the transients that startle you awake; total silence makes every one of them a threat.
 4. **Cool: about 18–20 °C / 65–68 °F, and cooler rather than warmer.** Falling asleep requires your core temperature to fall, so heating off *before* bed, not after. Summer, free: freeze a bottle behind the fan, damp sheet, fewer clothes than feels sensible, sleep lower in the house because heat rises. A warm shower 60–90 minutes before bed works counterintuitively by dumping heat through your hands and feet afterwards.
 5. **Then a $10–15 eye mask**, if the room can't be made dark: the 3D-cup kind that doesn't press on the lids. Highest effect-to-cost ratio in the entire list for shared housing, shifts and travel. The blocker is usually a partner's feelings, which the sentence "this isn't about you, this is about how my brain works" resolves.

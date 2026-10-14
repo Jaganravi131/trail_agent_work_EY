@@ -30,15 +30,15 @@ A new domain cannot win "shift work sleep disorder" (domain authority + medical 
 | T3 | 3 on 3 off night shift sleep | low | specific rota | art. 05 §the eight days (same arithmetic, different block) |
 | T3 | forward vs backward shift rotation | low | mechanism | art. 05 §rotation direction |
 | T3 | is 4 on 4 off better than 5 on 2 off | low | comparison | art. 05 §three schedules |
-| T3 | best earplugs for day sleeping | low | commercial | art. 01 §4 |
+| T3 | best earplugs for day sleeping | low | commercial | **art. 06** (/earplugs-day-sleeping/), shipped 2026-10-14 — art. 01 §4 hands off to it |
 | T3 | how to get out of night shift schedule | very low | decision | art. 03 §4 (the rota script) |
 | T3 | night shift depression what to do | medium, YMYL | help-seeking | *not* monetised; signpost to clinicians |
-| T3 | days off after night shift too short | very low | commutes | art. 03 |
+| T3 | days off after night shift too short | very low | commutes | **art. 07** (/days-off-reset/), shipped 2026-10-14; art. 05 links into it |
 | T3 | coffee nap how it works | low | how-to | art. 03 §3 |
 
 **Rule for the whole site:** one page per *question a person actually asks at 07:40 on their way to bed*, never one page per keyword group. Google is reasonably good at grouping synonyms; humans are not forgiving of a page that answers a neighbouring question.
 
-## Site architecture (12 pages, then stop)
+## Site architecture (12 pages, then stop — **all 12 are live**)
 
 The address below is not owned by anyone: the live host comes from `base_url` in
 `config/site.json`, which is also what turns canonicals and `sitemap.xml` on (see `04-seo/02-DEPLOY.md`).
@@ -52,9 +52,9 @@ The address below is not owned by anyone: the live host comes from `base_url` in
 ├── /caffeine-on-night-shift/        article 03  (pillar)
 ├── /4-on-4-off-sleep/               **shipped 2026-10-13** (was batch 2)
 ├── /blackout-curtains-eye-mask/     **shipped 2026-10-14** (the builder injects the disclosure when a shop link appears)
-├── /earplugs-day-sleeping/          batch 2  ← still unwritten; `./wf site --check` is what keeps "unwritten" from becoming a 404
+├── /earplugs-day-sleeping/          **shipped 2026-10-14** as article 06
 ├── /no-microwave-meal-prep/         **shipped 2026-10-14**
-├── /days-off-reset/                 batch 2  ← still unwritten
+├── /days-off-reset/                 **shipped 2026-10-14** as article 07 — every planned page now exists
 ├── /nap-before-shift/               **shipped 2026-10-13** (was batch 3)
 ├── /book/                           single sales page — **shipped 2026-10-14**, and it says plainly that the store listing is a human 20-minute task rather than promising a link that does not exist yet
 └── /about/ + /editorial-policy/     **shipped 2026-10-13** — E-E-A-T: who wrote it, what
@@ -62,7 +62,7 @@ The address below is not owned by anyone: the live host comes from `base_url` in
 ```
 
 12 pages, then re-evaluate. Not 60. (`./wf site --check` prints how many exist and refuses to
-build a page that links to one that does not.) The 8 photo slots wait for real images in
+build a page that links to one that does not.) The 10 photo slots wait for real images in
 `04-seo/images/`; until each one lands the build renders a labelled box instead of a torn icon.
 
 A 60-page thin site in 2026 is a negative signal, and it's also 60 hours you'll never get back.
@@ -91,7 +91,7 @@ Every pillar links to **two** other pillars + the tool + /book/. The tool links 
 | Week | Ships |
 |---|---|
 | 1 | Tool live, 3 pillars live, /about/, /editorial-policy/ — **the last two shipped early, see `04-seo/pages/`** |
-| 2 | three of the batch-2 pages are already live, so this week is outreach plus the `/earplugs-day-sleeping/` and `/days-off-reset/` pair |
+| 2 | the whole planned tree shipped early, so week 2 is **outreach only**: 10 free/no-cost places, and the review-the-numbers pass over the weakest 2 pages |
 | 3 | 4 more pages, first 5 Reddit/LinkedIn value posts |
 | 4 | /nap-before-shift/ and /4-on-4-off-sleep/ — already shipped, so spend this week on the review-the-numbers pass and fixing the weakest 2 pages instead |
 

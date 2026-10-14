@@ -24,7 +24,7 @@
  {
   "target": "04-seo/01-KEYWORD-MAP.md",
   "passed": true,
-  "words": 1143,
+  "words": 1166,
   "audience": "internal",
   "errors": 0,
   "warnings": 0,
@@ -57,7 +57,7 @@
  {
   "target": "04-seo/articles/01-sleep-after-night-shift.md",
   "passed": true,
-  "words": 1989,
+  "words": 2027,
   "audience": "reader",
   "errors": 0,
   "warnings": 0,
@@ -97,7 +97,49 @@
  {
   "target": "04-seo/articles/05-4-on-4-off-sleep.md",
   "passed": true,
-  "words": 1888,
+  "words": 1918,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {},
+  "findings": []
+ },
+ {
+  "target": "04-seo/articles/06-earplugs-day-sleeping.md",
+  "passed": true,
+  "words": 1924,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {},
+  "findings": []
+ },
+ {
+  "target": "04-seo/articles/07-days-off-reset.md",
+  "passed": true,
+  "words": 1999,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {},
+  "findings": []
+ },
+ {
+  "target": "04-seo/articles/08-no-microwave-meal-prep.md",
+  "passed": true,
+  "words": 1390,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {
+   "disease_words_without_claim": 1
+  },
+  "findings": []
+ },
+ {
+  "target": "04-seo/articles/09-blackout-curtains-eye-mask.md",
+  "passed": true,
+  "words": 1303,
   "audience": "reader",
   "errors": 0,
   "warnings": 0,
@@ -134,28 +176,6 @@
   "target": "04-seo/pages/03-book.md",
   "passed": true,
   "words": 1085,
-  "audience": "reader",
-  "errors": 0,
-  "warnings": 0,
-  "stats": {},
-  "findings": []
- },
- {
-  "target": "04-seo/pages/04-no-microwave-meal-prep.md",
-  "passed": true,
-  "words": 1390,
-  "audience": "reader",
-  "errors": 0,
-  "warnings": 0,
-  "stats": {
-   "disease_words_without_claim": 1
-  },
-  "findings": []
- },
- {
-  "target": "04-seo/pages/05-blackout-curtains-eye-mask.md",
-  "passed": true,
-  "words": 1303,
   "audience": "reader",
   "errors": 0,
   "warnings": 0,

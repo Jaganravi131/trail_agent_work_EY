@@ -1,14 +1,14 @@
 {
-  "generated_utc": "2026-10-13T15:38:19Z",
+  "generated_utc": "2026-10-14T08:08:26Z",
   "base_model": "qwen3.6-8b",
   "method": "QLoRA (4-bit NF4 base + LoRA adapters)",
   "chat_template": "chatml",
   "dataset": {
     "dir": "dataset",
-    "sft_train_sha256_16": "11ee80f31ad60aa9",
-    "sft_val_sha256_16": "96261a4c8afea805",
+    "sft_train_sha256_16": "1e0a8166b1355332",
+    "sft_val_sha256_16": "7a4395c6265fc7e9",
     "dpo_sha256_16": "e3b0c44298fc1c14",
-    "sft_examples": 92,
+    "sft_examples": 117,
     "dpo_pairs": 0
   },
   "hyperparameters": {
@@ -46,6 +46,6 @@
   },
   "provenance_rule": "corpus = gate-passing, operator-approved repo assets only (see dataset/dataset-card.md). Do not add scraped data or outputs from models whose licence bars training on them.",
   "fine_tune_recommended": false,
-  "recommendation_note": "92 SFT examples and 0 preference pairs is below the floor (150/40). A LoRA on this would mostly learn to imitate formatting while degrading instruction-following, and you would have no way to tell the difference at 40 examples.",
-  "est_total_steps": 33
+  "recommendation_note": "117 SFT examples and 0 preference pairs is below the floor (150/40). A LoRA on this would mostly learn to imitate formatting while degrading instruction-following, and you would have no way to tell the difference at 40 examples.",
+  "est_total_steps": 42
 }

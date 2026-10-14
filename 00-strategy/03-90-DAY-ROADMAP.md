@@ -37,9 +37,9 @@ Assumes ~2 hr/day of human time in weeks 1–4, then ~1 hr/day. Assets are alrea
 
 ## The fact-check pass (do it, don't skip it)
 
-Eleven claims need your eyes against a primary source today, because a book that is wrong about
+Twelve claims need your eyes against a primary source today, because a book that is wrong about
 health gets 1-star reviews and could get someone hurt (items 1–6 are the manuscript; 7–10 came in
-with the two articles added on 2026-10-13; 11 came with the site pages of 2026-10-14):
+with the two articles added on 2026-10-13; 11 came with the site pages, and 12 with the last two articles, on 2026-10-14):
 
 1. Caffeine half-life "~5 h, range 2–10 h" (ch. 4)
 2. "Up to ~400 mg/day" and "single doses ~200 mg" adult guidance figure
@@ -48,15 +48,19 @@ with the two articles added on 2026-10-13; 11 came with the site pages of 2026-1
 5. Room temperature 18–20 °C for sleep onset
 6. "Sleep cycles ~90 min" (varies 70–120; the book already hedges — confirm the wording reads as an approximation)
 7. "A 30–60 minute nap lands in deep sleep and costs you up to an hour of impairment" — the inertia window art. 04 builds its whole recommendation on (art. 04 §which nap)
-8. "Roughly 1 day of adjustment per hour of shift moved, and about twice that going backward" — stated as a rule of thumb in art. 05; check the direction of the advice is right even if you soften the number
+8. "Roughly 1 day of adjustment per hour of shift moved, and about twice that going backward" — the rule of thumb art. 05 and art. 07 both build their day-off plans on; check the direction of the advice is right even if you soften the number
 9. "Under about 5 lux at pillow height" and "daylight leaking around a curtain gap is enough to hold a clock in place" — the lux figure is the one to verify or generalise to "if you can read by it, it's too bright" (art. 05)
-10. "200 mg caffeine plus a 20-minute nap buys roughly half an hour of mitigation" — the coffee-nap claim, used in both new articles and in the drowsy-driving rule; if the evidence won't support "half an hour", cut the number and keep the instruction to stop
+10. "200 mg caffeine plus a 20-minute nap buys roughly half an hour of mitigation" — the coffee-nap claim, used in three articles and in the drowsy-driving rule (including art. 07's last-off-day drive home); if the evidence won't support "half an hour", cut the number and keep the instruction to stop
 
 11. The food-safety figures on `/no-microwave-meal-prep/` — fridge at or below 4 °C / 40 °F, 2 h
     out of the fridge (1 h above 32 °C / 90 °F), reheat to steaming, cooked leftovers 3–4 days, and
     the cooked-rice warning. These are the commonly published household numbers, but the page tells
     readers to act on them, so check them against the food-standard agency your readers are actually
     governed by and keep that set
+12. "Loud snoring with gasps or pauses is worth being checked for sleep apnoea" (art. 06) — this is the
+    only place the site points a reader at someone else's symptom. Confirm the wording stays "worth being
+    checked" and never becomes a diagnosis or a device recommendation; if you're not comfortable with it,
+    cut the sentence and keep the negotiation table around it
 
 Anything you can't verify in 10 minutes: soften or cut. This manuscript is *safe* by construction — no supplements, no drug dosing, no diagnosis, no treatment claims — keep it that way through your edits.
 
