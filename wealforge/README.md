@@ -16,7 +16,7 @@ tool, and it has no ability to spend money.
 ./wf today                 # this day's human actions, from the 90-day schedule
 ./wf run                   # the whole loop, unattended-safe (what CI runs weekly)
 ./wf status; ./wf log      # what the ledger knows
-python3 -m unittest discover -s tests -q     # 158 tests, no network
+python3 -m unittest discover -s tests -q     # 253 tests, no network
 
 # model layer — see wealforge/FINE-TUNING.md
 ./wf model --select --for-finetune  # which open-weight model, ranked by licence fit then VRAM

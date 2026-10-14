@@ -603,11 +603,21 @@ def evaluate_text(text: str, target: str = "<text>", rules: list[Rule] | None = 
     return rep
 
 
+#: Generated aggregates. A book folder contains both its chapter files and the assembled
+#: `manuscript.md` that `wf book` writes from them. Gating the copy twice inflates the bundle's word
+#: count ("22,543 words" for an 11,262-word book), duplicates every finding in the operator's report,
+#: and — the part that matters — a `gate:allow` marker on a line in a chapter does not exist at that
+#: line number in the aggregate, so a suppression that is correct becomes a finding. The aggregate is
+#: *provably* the sources: `wf book --check` fails when it stops matching, which is the stronger check.
+GENERATED_AGGREGATES = {"manuscript.md"}
+
+
 def _files_under(p: Path) -> list[Path]:
     if p.is_file():
         return [p] if p.suffix.lower() in {".md", ".html", ".txt"} else []
     return [c for c in sorted(p.rglob("*"))
-            if c.is_file() and c.suffix.lower() in {".md", ".html", ".txt"}]
+            if c.is_file() and c.suffix.lower() in {".md", ".html", ".txt"}
+            and c.name not in GENERATED_AGGREGATES]
 
 
 def evaluate_paths(paths: Iterable[str | Path], rules: list[Rule] | None = None,

@@ -126,7 +126,24 @@ class TestPreScreen(unittest.TestCase):
 
 
 # ----------------------------------------------------------------- gate ----
+REPO = Path(__file__).resolve().parents[1]
+
+
 class TestGate(unittest.TestCase):
+    def test_a_generated_aggregate_is_not_gated_twice(self):
+        """`01-book/` holds the chapters *and* the manuscript `wf book` assembles from them.
+
+        Gating both doubles the word count in the report, duplicates every finding, and turns a
+        correct line-scoped `gate:allow` in a chapter into a finding in the aggregate, where the same
+        sentence sits on a different line. `wf book --check` is the check that belongs on a generated
+        file: it proves the aggregate equals its sources, which is stronger than reading it again.
+        """
+        reports = gate.evaluate_paths([REPO / "01-book"], bundle=True)
+        self.assertEqual(len(reports), 1)
+        self.assertIn("bundle of 11 files", reports[0].target)
+        names = {p.name for p in gate._files_under(REPO / "01-book")}
+        self.assertNotIn("manuscript.md", names)
+        self.assertIn("00-front-matter.md", names)
     def test_clean_health_article_passes(self):
         text = (ROOT / "04-seo/articles/01-sleep-after-night-shift.md").read_text()
         rep = gate.evaluate_text(text, "04-seo/articles/01-sleep-after-night-shift.md")
