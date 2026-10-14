@@ -747,7 +747,10 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
                                          f'{src.name}" alt="{alt}" loading="lazy">{m.group(1)}</figure>',
                               p.html)
             res.photos_used.append(f"{p.slug}:{src.name}")
-    if res.photos_needed and not check:
+    # Not suppressed in --check mode, unlike the "file not written" notes: missing photos are a
+    # finding about the content, and `--check` is the path CI reads. Warnings never fail the build —
+    # an asset the operator has not photographed yet is pending human work, not a broken site.
+    if res.photos_needed:
         res.warnings.append(f"{len(res.photos_needed)} photo slot(s) rendered as labelled "
                             f"placeholders: {', '.join(sorted(set(res.photos_needed))[:4])}")
 

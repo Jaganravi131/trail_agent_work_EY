@@ -102,6 +102,18 @@ class Fixture(unittest.TestCase):
         second = {p: p.read_bytes() for p in sorted(self.out.rglob("*")) if p.is_file()}
         self.assertEqual(first, second)
 
+    def test_check_mode_reports_photo_gaps_although_it_reports_no_written_files(self):
+        # The write-only findings (sitemap, feed) disappear in --check, but a photo the operator has
+        # not taken is a finding about the content, and --check is the step CI reads.
+        _write(self.root, "04-seo/articles/03-img.md",
+               ART_B.replace("Beta", "Image").replace("slug: /beta/", "slug: /photo/") +
+               "\n![My room](images/my-room.jpg)\n")
+        res = self.build(check=True)
+        self.assertTrue(any("photo slot" in w for w in res.warnings), res.warnings)
+        self.assertFalse(any("sitemap" in w for w in res.warnings), res.warnings)
+        self.assertEqual(res.written, [])
+        self.assertTrue(res.ok, "pending human work is a warning, never a red build")
+
     def test_check_mode_writes_nothing(self):
         res = self.build(check=True)
         self.assertTrue(res.ok, res.errors)
@@ -472,6 +484,41 @@ class RepoSite(unittest.TestCase):
             self.assertFalse((tmp / "feed.xml").exists(), "no base_url yet, so no absolute-URL feed")
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_the_feed_is_valid_xml_and_dates_from_published_when_stated(self):
+        import xml.etree.ElementTree as ET
+        root = Path(tempfile.mkdtemp(prefix="wf-site-feed-"))
+        try:
+            _write(root, "04-seo/articles/01-alpha.md", ART_A.replace(
+                "last_reviewed: 2026-10-14", 'last_reviewed: 2026-10-14\npublished: 2026-10-01'))
+            _write(root, "04-seo/articles/02-beta.md", ART_B.replace(
+                "last_reviewed: 2026-10-14", "last_reviewed: 2026-09-30"))
+            _write(root, "config/site.json", json.dumps({
+                "site_name": "Test & Co <x>", "base_url": "https://example.org/site/",
+                "language": "en-gb"}))
+            res = site.build(root, out_dir=root / "docs")
+            self.assertTrue(res.ok, res.errors)
+            feed = (root / "docs" / "feed.xml").read_text()
+            ch = ET.fromstring(feed).find("channel")          # a feed that doesn't parse is worse than none
+            self.assertEqual(ch.findtext("title"), "Test & Co <x>")   # escaped in, decoded out
+            self.assertEqual(ch.findtext("language"), "en-gb")
+            items = ch.findall("item")
+            self.assertEqual([i.findtext("title") for i in items], ["Alpha", "Beta"])
+            self.assertIn("01 Oct 2026", items[0].findtext("pubDate"))   # published, not reviewed
+            self.assertIn("30 Sep 2026", items[1].findtext("pubDate"))   # review date as the fallback
+            self.assertIn("https://example.org/site/alpha/", items[0].findtext("guid"))
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_delivered_vector_assets_parse(self):
+        import xml.etree.ElementTree as ET
+        for rel in ("04-seo/images/favicon.svg", "04-seo/images/og-card.svg"):
+            f = REPO / rel
+            self.assertTrue(f.exists(), f"{rel} is the site's mark / social card source")
+            node = ET.parse(f).getroot()
+            self.assertTrue(node.tag.endswith("svg"), rel)
+            self.assertTrue(node.get("width") and node.get("height"),
+                          f"{rel} needs an intrinsic size; a viewBox-only SVG renders blank in some readers")
 
     def test_the_report_states_which_host_features_are_switched_on(self):
         md = site.report_markdown(self.res, "docs")
