@@ -381,10 +381,20 @@ function icsFor(p){
   const ev = (name,t) => ['BEGIN:VEVENT','UID:'+wrap(t)+'-'+name.replace(/\W/g,'')+'@shiftreset',
     'DTSTART:'+stamp(t),'SUMMARY:'+name,
     'DESCRIPTION:From the free Shift Reset Planner. Educational, not medical advice.',
-    'BEGIN:VALARM','TRIGGER:-PT0M','ACTION:DISPLAY','DESCRIPTION:'+name,'END:VALARM','END:VEVENT'].join('\r\n');
-  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//shiftreset//planner//EN','CALSCALE:GREGORIAN',
-    ...[
-      ['😴 Anchor nap (90 min)', p.nap ?? p.meal],
+    'BEGIN:VALARM','TRIGGER:-PT0M','ACTION:DISPLAY','DESCRIPTION:'+name,'END:VALARM','END:VEVENT'];
+  // RFC 5545 §3.1: no line may be longer than 75 octets, so long descriptions and emoji summaries
+  // are folded with a leading space. Strict calendar clients reject an unfolded file.
+  const bytes = t => { let n = 0; for (const ch of t){ const c = ch.codePointAt(0);
+    n += c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4; } return n; };
+  const fold = line => {
+    const out = []; let cur = '';
+    for (const ch of line){
+      const next = cur + ch;
+      if (bytes(next) > (out.length ? 74 : 75)){ out.push(cur); cur = ' ' + ch; } else { cur = next; }
+    }
+    return (out.push(cur), out);
+  };
+  const alarms = [
       ['🍽 Anchor meal — 30 g protein', p.meal],
       ['☕ Caffeine 1 (last dose is #2)', p.d1],
       ['💡 10 min bright light', p.light1],
@@ -393,7 +403,13 @@ function icsFor(p){
       ['🕶 Lights down, room ready (T-1)', p.tLight],
       ['🛏 Bed. Turn the clock away.', p.bed],
       ['⏰ Wake — fixed anchor, light on', p.wake],
-    ].map(([n,t])=>ev(n,t)),'END:VCALENDAR'].join('\r\n');
+  ];
+  // Only nap when the plan actually contains one. Falling back to the meal time used to put an
+  // “Anchor nap (90 min)” alarm on the same minute as the meal alarm for anyone who had ticked
+  // “I can't nap” — an instruction on their phone for something the page told them not to do.
+  if (p.nap !== null) alarms.unshift(['😴 Anchor nap (90 min)', p.nap]);
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//shiftreset//planner//EN','CALSCALE:GREGORIAN',
+    ...alarms.map(([n,t])=>ev(n,t).flatMap(fold)),'END:VCALENDAR'].flat().join('\r\n');
 }
 
 /* ---------- wiring ---------- */

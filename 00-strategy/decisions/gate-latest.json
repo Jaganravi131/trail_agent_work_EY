@@ -2,7 +2,7 @@
  {
   "target": "03-tool/README.md",
   "passed": true,
-  "words": 697,
+  "words": 828,
   "audience": "internal",
   "errors": 0,
   "warnings": 0,
@@ -12,7 +12,7 @@
  {
   "target": "03-tool/index.html",
   "passed": true,
-  "words": 4396,
+  "words": 4554,
   "audience": "reader",
   "errors": 0,
   "warnings": 0,

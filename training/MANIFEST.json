@@ -1,12 +1,12 @@
 {
-  "generated_utc": "2026-10-14T08:08:26Z",
+  "generated_utc": "2026-10-14T09:18:06Z",
   "base_model": "qwen3.6-8b",
   "method": "QLoRA (4-bit NF4 base + LoRA adapters)",
   "chat_template": "chatml",
   "dataset": {
     "dir": "dataset",
     "sft_train_sha256_16": "1e0a8166b1355332",
-    "sft_val_sha256_16": "7a4395c6265fc7e9",
+    "sft_val_sha256_16": "a759c14e74429837",
     "dpo_sha256_16": "e3b0c44298fc1c14",
     "sft_examples": 117,
     "dpo_pairs": 0

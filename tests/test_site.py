@@ -204,6 +204,65 @@ Not medical advice.
         self.assertNotIn("photo-slot", page)
         self.assertTrue(any("my-room.jpg" in x for x in res.photos_used), res.photos_used)
 
+    def test_the_nav_only_offers_pages_the_build_actually_made(self) -> None:
+        """A hard-coded nav is a site-wide 404 the moment a folder is not there.
+
+        The prose pages already refuse a `related` link that goes nowhere. The shell's nav is the
+        same promise written by hand, so this is the test that keeps it honest.
+        """
+        res = self.build()
+        alpha = (self.out / "alpha" / "index.html").read_text(encoding="utf-8")
+        # No 03-tool/index.html in this fixture, so no /planner/ link — and the two pages that do
+        # exist are still offered.
+        self.assertNotIn("planner/", alpha, res.errors and "" or "the nav invented a page")
+        self.assertIn('href="../beta/"', alpha)     # a real internal link, from the article body
+        self.assertIn('href="../"', alpha)
+        page404 = (self.out / "404.html").read_text(encoding="utf-8")
+        self.assertNotIn("planner/", page404)
+        # With the tool present, the link reappears on its own — nothing is added by hand.
+        _write(self.root, "03-tool/index.html",
+               '<!doctype html><html><head><title>Planner</title></head><body><p>tool</p></body></html>')
+        res = self.build()
+        self.assertTrue(res.ok, res.errors)
+        self.assertIn('href="../planner/"', (self.out / "alpha" / "index.html").read_text(encoding="utf-8"))
+
+    # ---- the files a host serves that no page links to
+    def test_the_404_page_is_unfindable_by_search_and_links_only_to_real_pages(self) -> None:
+        self.build()
+        page = (self.out / "404.html").read_text(encoding="utf-8")
+        self.assertIn("No page here", page)
+        # GitHub Pages and Netlify answer a dead URL with a real 404 status; a folder copied onto
+        # any other host (or opened from a preview server) answers 200. Without this tag, the
+        # page of "these links exist" becomes an indexed page of links.
+        self.assertIn('<meta name="robots" content="noindex,follow">', page)
+        # Written at the root, not one folder deep, so the shell's "../" prefix has to be gone and
+        # the home link must not collapse to href="" — that resolves to the current page.
+        self.assertNotIn('"../', page)
+        hrefs = re.findall(r'href="([^"]*)"', page)
+        self.assertIn("./", hrefs, "the home link must point at ./, not at itself")
+        for href in hrefs:
+            if href.startswith(("http", "#", "mailto:", "data:")):
+                continue
+            rel = href.split("#")[0].rstrip("/")
+            target = (self.out / rel).resolve()
+            self.assertTrue(target.exists() or (target / "index.html").exists(),
+                            f"the 404 page links to {href!r}, which does not exist in the build")
+
+    def test_robots_txt_advertises_a_sitemap_only_when_one_was_written(self) -> None:
+        self.build()
+        robots = (self.out / "robots.txt").read_text(encoding="utf-8")
+        self.assertIn("User-agent: *", robots)
+        self.assertIn("Allow: /", robots)
+        # No base_url in this fixture → no sitemap.xml → no pointer to a file that is not there.
+        self.assertNotIn("Sitemap:", robots)
+        self.assertFalse((self.out / "sitemap.xml").exists())
+        # .nojekyll: without it, GitHub Pages runs Jekyll and silently drops folders that begin
+        # with an underscore, which is a 404 nobody can explain.
+        self.assertTrue((self.out / ".nojekyll").exists())
+        netlify = (self.out / "netlify.toml").read_text(encoding="utf-8")
+        self.assertIn('publish = "docs"', netlify)
+        self.assertIn('X-Content-Type-Options = "nosniff"', netlify)
+
     # ---- the planner
     def test_the_standalone_tool_becomes_a_page_with_working_links(self):
         _write(self.root, "03-tool/index.html", """<!doctype html>
@@ -235,6 +294,9 @@ Not medical advice.
         self.assertIn('<link rel="canonical" href="https://example.org/site/alpha/">',
                       (self.out / "alpha" / "index.html").read_text())
         self.assertFalse(any("base_url is empty" in w for w in res.warnings))
+        # The other half of the rule: with a domain, robots.txt must point at the sitemap it just wrote.
+        self.assertIn("Sitemap: https://example.org/site/sitemap.xml",
+                      (self.out / "robots.txt").read_text(encoding="utf-8"))
 
     def test_no_sitemap_is_written_without_a_domain(self):
         self.build()
@@ -300,6 +362,9 @@ class HeadMetadata(unittest.TestCase):
         _write(self.root, "04-seo/articles/02-beta.md", ART_B)
         _write(self.root, "config/site.json", json.dumps({"site_name": "Test", "base_url": "",
                                                            "author": "A. N. Other", "language": "en-gb"}))
+        # The brand asset has to exist for its link to exist. It used to be assumed, which is how
+        # a test can pass while the builder emits a request the built folder cannot answer.
+        _write(self.root, "04-seo/images/favicon.svg", '<svg xmlns="http://www.w3.org/2000/svg"/>\n')
         self.out = self.root / "docs"
         site.build(self.root, out_dir=self.out)
 

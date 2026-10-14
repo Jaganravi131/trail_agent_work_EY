@@ -61,6 +61,14 @@ fails the run when the two disagree.
   just prose).
 - `tests/test_site.py` — the planner's link rewriting, the missing-canonical behaviour and the fact
   that `/planner/` exists as a page the rest of the site can link to.
-- The `.ics`/fridge-card code is exercised by hand before a deploy, not by the test suite: it is
-  browser-only JS and there is no headless browser in this sandbox. Anything a reader must trust for
-  safety is written in prose in the articles, where the gate can actually read it.
+- `bash tools/ci/planner-check.sh` — the planner's arithmetic, run for real. It evaluates the page's
+  `<script>` in node against a stub DOM, clicks *Build my plan* through `go()` for nine rota patterns
+  (12h nights with and without a nap, 4-on-4-off, 16h, day shifts, a 24h on-call, the low-caffeine
+  setting, the sleep-window edge) and asserts the invariants a reader is relying on: the last dose never
+  lands within two hours of bed, the daily total stays under the chosen ceiling, the nap is 90 minutes
+  rather than the 30–60 that causes inertia, wake equals bed plus the core block, nothing renders as
+  `NaN`, and the `.ics` has balanced `BEGIN`/`END` pairs, unique UIDs, local-basic timestamps and no line
+  over 75 octets (RFC 5545). Blank input, an unparseable time and a sub-3-hour shift must produce prose
+  in `#err`, not a plan. `tests/test_planner.py` then breaks the page on purpose — the curfew, the
+  calendar tail, the folding rule — to prove the harness fails when it should. Where node is absent the
+  check skips with a visible reason rather than passing quietly.

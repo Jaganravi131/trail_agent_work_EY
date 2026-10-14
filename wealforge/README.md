@@ -16,7 +16,8 @@ tool, and it has no ability to spend money.
 ./wf today                 # this day's human actions, from the 90-day schedule
 ./wf run                   # the whole loop, unattended-safe (what CI runs weekly)
 ./wf status; ./wf log      # what the ledger knows
-python3 -m unittest discover -s tests -q     # 253 tests, no network
+python3 -m unittest discover -s tests -q     # 263 tests, no network
+bash tools/ci/planner-check.sh               # runs the free tool's JS in node: 9 rota patterns, .ics, error paths
 
 # model layer — see wealforge/FINE-TUNING.md
 ./wf model --select --for-finetune  # which open-weight model, ranked by licence fit then VRAM
@@ -132,11 +133,15 @@ No GPU and no model handy? `python3 tools/model_stub.py --port 11434 --bad-first
 real text over the real Ollama wire format, so the whole pipeline — including the repair
 loop, which has something to repair — can be exercised in seconds. `tests/test_models.py`
 uses the same trick: the HTTP path is tested over sockets against a stub, never against the
-internet. CI calls the same two files it runs (`bash tools/ci/wire-path.sh`,
-`bash tools/ci/quality-floor.sh`) rather than keeping a private copy of the logic in YAML,
-because a check you can only run on someone else's machine cannot be debugged here — and the
-stub picks its reply by heading overlap with ties broken by the text itself, never by
-`Path.glob` order, so a fixture cannot fail a build for filesystem reasons.
+internet. CI calls the same files it runs (`bash tools/ci/wire-path.sh`,
+`bash tools/ci/quality-floor.sh`, `bash tools/ci/planner-check.sh`) rather than keeping a private
+copy of the logic in YAML, because a check you can only run on someone else's machine cannot be
+debugged here — and the stub picks its reply by heading overlap with ties broken by the text
+itself, never by `Path.glob` order, so a fixture cannot fail a build for filesystem reasons.
+The third script is different in kind: it evaluates the free planner's JavaScript against a stub
+DOM, which makes it the only check in the repo that *runs* the tool instead of reading it. Node is
+optional — without it the script says SKIP and exits 0, and `tests/test_planner.py` records the same
+skip, so a machine that cannot check the arithmetic is visible rather than quietly green.
 
 ## Deliberate omissions
 

@@ -63,6 +63,38 @@ promise.
   belonged to a 170-page book), and the sales page's "~11,600 words" for an 11,262-word manuscript. The
   sales-page figure is now checked against the build.
 
+### Verified from a clean clone, and the last unbacked claim became an executable check (`0d687a9`→, 2026-10-14)
+
+Cloned to an empty directory and run as a stranger would: sixteen commands, every one exiting 0, the site
+rebuild byte-identical, the ebook reproducible, `docs/` crawled with zero broken references. Then the claims
+that no command could prove were made provable.
+
+- `tools/ci/planner-check.mjs` + `tools/ci/planner-check.sh` + `tests/test_planner.py`: the free planner's
+  JavaScript is now actually executed — evaluated as written against a stub DOM in node, clicking *Build my
+  plan* through `go()` for nine rota patterns and asserting the plan's arithmetic, the rendered text, the
+  exported `.ics` and the error paths. The README had claimed headless testing with nothing in the repo to
+  run. Two real defects came out of it: readers who ticked *I can't nap* were getting a 90-minute nap alarm
+  at their meal time, and `.ics` lines ran past 75 octets, which a strict calendar client rejects (RFC 5545
+  §3.1) — now folded. `tests/test_planner.py` also breaks the page deliberately (curfew, calendar tail,
+  folding rule) so the harness cannot pass by doing nothing, and skips with a visible reason where node is
+  absent.
+- The site builder stopped assuming its own assets exist: the favicon link is written only when
+  `04-seo/images/favicon.svg` does, and the nav and the footer's policy link are built from the slugs the
+  build produced. A shell that hard-codes `/planner/` in every page of a tree with no `03-tool/` is the same
+  bug the `related`-links check already refuses, one level up.
+- The built `404.html` carries `noindex,follow`: hosts answer a dead URL with that file, but a copied folder
+  or a preview serves it at 200, and search engines will index "No page here" plus its twelve links.
+- `tests/test_site.py` gained the root extras it had never covered — the 404 page's links and its robots
+  tag, `robots.txt` advertising a sitemap only when a sitemap was written, `.nojekyll`, the Netlify header
+  block. Suite: 254 tests → 263.
+- The corpus is reproducible in the strictest sense available here: a clean clone running
+  `./wf dataset` writes `sft-train.jsonl` / `sft-val.jsonl` byte-identical to this machine's
+  (`1e0a8166…` / `a759c14e…`), and the committed `training/MANIFEST.json` records exactly those two
+  hashes, so a config can be checked against the data it was written from on any machine.
+- A green CI run now closes a blocking issue only when the failing commit is genuinely behind it
+  (`0d687a9`). A red run that finished after a green one had left issue #3 open on a fixed branch, which is
+  how an alert becomes wallpaper.
+
 ---
 
 ## v0.3.0 (declared, never tagged) — `1d8264b`, 2026-10-11
@@ -88,7 +120,7 @@ tracker, the risk register — and the EPUB structure check that caught pandoc 3
 
 ## To cut the first tag
 
-1. `python3 -m unittest discover -s tests -q` → `Ran 253 tests — OK`.
+1. `python3 -m unittest discover -s tests -q` → `Ran 263 tests — OK`.
 2. `./wf gate 01-book --bundle` and
    `./wf gate 03-tool 04-seo 02-kdp 05-marketing 06-tracking 07-risks --summary --strict` → both PASS.
 3. `./wf site --check && ./wf book --check && ./wf validate 02-kdp/kdp-metadata.json` → clean, and

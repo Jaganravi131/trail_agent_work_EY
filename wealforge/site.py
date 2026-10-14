@@ -395,8 +395,7 @@ PAGE = """<!doctype html>
 {meta}{jsonld}{canonical}<link rel="stylesheet" href="../styles.css">
 <!-- built by `wf site` from 04-seo/. No analytics, no cookies, no external requests. -->
 </head><body><div class="wrap">
-<nav class="top"><a href="../">Home</a> · <a href="../planner/">Free planner</a> · <a href="../book/">The book</a>
- · <a href="../about/">About</a> · <a href="../editorial-policy/">Corrections</a></nav>
+<nav class="top">{nav}</nav>
 <main>
 {affline}<article>{body}</article></main>
 {related}<footer>{footer}</footer>
@@ -578,16 +577,36 @@ def _jsonld(cfg: dict[str, Any], base_url: str, page: "Page", slugs: set[str]) -
     return f'<script type="application/ld+json">{json.dumps(graph, ensure_ascii=False)}</script>\n'
 
 
-def _footer(cfg: dict[str, Any]) -> str:
+#: The four destinations the site shell offers, in the order they should read. Kept as data so the
+#: nav can be built from what a build actually produced: a hard-coded nav is how a site whose tool
+#: folder was deleted ends up shipping a link to /planner/ on every page — the same class of bug
+#: the related-links check already refuses, one level higher up.
+NAV_ITEMS = (("planner/", "Free planner"), ("book/", "The book"), ("about/", "About"),
+             ("editorial-policy/", "Corrections"))
+
+
+def _nav(slugs: "set[str] | frozenset[str]", up: str = "../") -> str:
+    items = [f'<a href="{up}">Home</a>']
+    items += [f'<a href="{up}{slug}">{label}</a>' for slug, label in NAV_ITEMS if slug in slugs]
+    return " · ".join(items)
+
+
+def _footer(cfg: dict[str, Any], slugs: "set[str] | frozenset[str]" = frozenset()) -> str:
     author = cfg.get("author", "J. Arek Thorne")
     # A contact route is not decoration: an affiliate account and a store listing both expect a
     # reachable address, and a reader who spots an error needs somewhere to put it. Empty means it
     # is simply absent — an invented inbox would be a lie in the one place people look for proof.
     contact = str(cfg.get("contact", "")).strip()
     reach = f" Contact: {html.escape(contact)}." if contact else ""
-    return (f"Educational content, not medical advice — see the <a href=\"../editorial-policy/\">"
-            f"editorial policy</a> for sourcing, disclosure and how corrections are logged. "
-            f"Written by {author} (a pen name; no clinical credentials are claimed).{reach}")
+    # The link is only written when the page exists, for the same reason the nav is built from `slugs`:
+    # the footer is the one line whose job is to say the site can be trusted, so it must not contain
+    # a dead link. Without the guard, a build that has no editorial-policy page still promises one on
+    # every page it writes.
+    policy = ('<a href="../editorial-policy/">editorial policy</a>' if "editorial-policy/" in slugs
+              else "editorial policy")
+    return (f"Educational content, not medical advice — see the {policy} for sourcing, disclosure and "
+            f"how corrections are logged. Written by {author} (a pen name; no clinical credentials "
+            f"are claimed).{reach}")
 
 
 HOME_REVIEWED = ""     # the home page is a generated index, so it carries no review date of its own
@@ -611,6 +630,10 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
     # 2-minute export, and until it exists the tag is omitted instead of pointing at nothing.
     img_root = root / "04-seo" / "images"
     have_og = (img_root / "og-card.png").exists()
+    # Same rule as the social card: a page may not link an asset the build did not copy, so the
+    # icon tag exists only when the file does. Otherwise every page in the site would ship a
+    # request that answers 404, which is the bug this builder is supposed to catch in other people's copy.
+    have_icon = (img_root / "favicon.svg").exists()
     pages = _read_pages(root, links, aff, res.errors)
     tool_src = root / TOOL_DIR / "index.html"
     if tool_src.exists():
@@ -698,11 +721,12 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
             items = "".join(f'<li><a href="../{x}">{x.strip("/").replace("-", " ")}</a></li>' for x in good)
             related = f'<p class="meta" style="margin-top:2rem">More in this cluster:</p><ul>{items}</ul>'
         p.html = PAGE.format(title=html.escape(p.title), desc=html.escape(p.description),
+                             nav=_nav(slugs, "../"),
                              meta=_brand_meta(cfg, base_url, p, up="../", have_og=have_og,
-                                              feed=bool(base_url)),
+                                              feed=bool(base_url), icon=have_icon),
                              jsonld=_jsonld(cfg, base_url, p, slugs),
                              canonical=_canonical(base_url, p.slug), affline=affline,
-                             body=p.html, related=related, footer=_footer(cfg))
+                             body=p.html, related=related, footer=_footer(cfg, slugs))
         if p.last_reviewed:
             p.html = p.html.replace("<main>\n", f"<main>\n<p class=\"meta\">Last reviewed "
                                                 f"{html.escape(p.last_reviewed)}</p>\n", 1)
@@ -728,7 +752,8 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
                                                           "overnights. Free planner, five long guides, one book."))),
         meta=_brand_meta(cfg, base_url, Page(slug="", src=root, title=str(cfg.get("site_name", "Shift Reset")),
                                              description=str(cfg.get("site_description", "")), kind="index",
-                                             last_reviewed=HOME_REVIEWED), up="", have_og=have_og, feed=True),
+                                             last_reviewed=HOME_REVIEWED), up="", have_og=have_og, feed=True,
+                                             icon=have_icon),
         jsonld=_jsonld(cfg, base_url, Page(slug="", src=root, title=str(cfg.get("site_name", "Shift Reset")),
                                            description=str(cfg.get("site_description", "")), kind="index"), slugs),
         canonical=_canonical(base_url, ""), lede=html.escape(str(cfg.get("lede", ""))) or
@@ -861,14 +886,21 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
                        for p in sorted(prose, key=lambda q: q.slug) if p.slug)
         page404 = PAGE.format(
             title=f"Page not found — {cfg.get('site_name', 'Shift Reset')}",
+            nav=_nav(slugs, ""),
             desc="That address is not part of this site.", canonical="", affline="",
-            meta=f'<link rel="icon" href="favicon.svg" type="image/svg+xml">\n'
-                 '<meta name="theme-color" content="#0b1220">\n', jsonld="",
+            meta=(f'<link rel="icon" href="favicon.svg" type="image/svg+xml">\n' if have_icon else '')
+                 + '<meta name="theme-color" content="#0b1220">\n'
+                 # GitHub Pages and Netlify do answer a dead URL with this file, and with a real 404
+                 # status — but the same folder on another host, or a local preview, serves it as an
+                 # ordinary 200 page. Without this line a crawler that has already found the site can
+                 # index "No page here" plus its list of links as though it were content. Links stay
+                 # followed, so nothing that does exist is hidden by this.
+                 '<meta name="robots" content="noindex,follow">\n', jsonld="",
             body="<h1>No page here</h1><p class=\"meta\">Either a link was mistyped or this site "
                  "renamed something. Everything that exists is listed below — or start at the "
                  "<a href=\"./\">home page</a>.</p>"
                  f"<ul>{lost}</ul>",
-            related="", footer=_footer(cfg))
+            related="", footer=_footer(cfg, slugs))
         # The shell is written for pages one folder deep (/slug/index.html), so a root-level
         # file has to drop the "../" prefix or its stylesheet and links point above the site.
         (out / "404.html").write_text(with_lang(page404).replace('="../', '="')
@@ -881,7 +913,7 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
                 (out / asset).write_bytes(src.read_bytes())
                 res.written.append(Path(asset))
         if not (img_root / "favicon.svg").exists():
-            res.warnings.append("no 04-seo/images/favicon.svg — browsers will request /favicon.ico and "
+            res.warnings.append("no 04-seo/images/favicon.svg — the icon link is omitted site-wide; browsers "
                                 "get a 404 (harmless, avoidable)")
         if have_og:
             res.written.append(Path("og-card.png"))

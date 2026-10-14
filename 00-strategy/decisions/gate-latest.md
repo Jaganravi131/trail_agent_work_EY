@@ -4,8 +4,8 @@
 
 | file | audience | words | errors | warnings | verdict |
 |---|---|---|---|---|---|
-| `03-tool/README.md` | internal | 697 | 0 | 0 | PASS |
-| `03-tool/index.html` | reader | 4396 | 0 | 0 | PASS |
+| `03-tool/README.md` | internal | 828 | 0 | 0 | PASS |
+| `03-tool/index.html` | reader | 4554 | 0 | 0 | PASS |
 | `04-seo/01-KEYWORD-MAP.md` | internal | 1209 | 0 | 0 | PASS |
 | `04-seo/02-DEPLOY.md` | reader | 1513 | 0 | 0 | PASS |
 | `04-seo/README.md` | internal | 744 | 0 | 0 | PASS |

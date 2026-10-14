@@ -37,7 +37,19 @@ cd 03-tool && python3 -m http.server 8000 --bind 0.0.0.0
 
 Enter a shift start and end. It returns the anchor nap, meal timing, a caffeine curfew with the half-life decay table (including *why* the curfew moved if your shift is long), the 3-2-1-0 countdown, sleep architecture, and a printable fridge card. It also exports nine `.ics` alarms so the plan lands in a phone calendar. It is a static file: GitHub Pages or Netlify Drop serves it free, with HTTPS.
 
-Tested headlessly across 9 rota patterns (12h nights, 4-on-4-off, 16h, day shifts, blank input, sub-3h shifts). All plan invariants pass: curfew never falls after the sleep time, decay is monotonic, ICS timestamps validate, and short/invalid shifts fail with a human-readable message instead of a NaN.
+```bash
+bash tools/ci/planner-check.sh       # the planner's arithmetic, in node, no browser needed
+```
+
+That command is the proof, and CI runs it. The planner's script is evaluated as written against a stub
+DOM: for each of nine patterns (12h nights with and without a nap, 4-on-4-off day one, 16h, two day
+shifts, the sleep-window edge, a 24h on-call, the low-caffeine setting) it asserts the curfew never falls
+after bedtime, the daily caffeine total stays under the chosen ceiling, the nap is 90 minutes rather than
+the 30–60 that leaves you groggy, and the exported `.ics` has balanced events, unique UIDs and no line
+over 75 octets. Blank input, an unparseable time or a sub-3-hour shift must answer with a sentence, not a
+`NaN`. Running it found two real defects, both fixed: a nap alarm that fired at the meal time for readers
+who had ticked *I can't nap*, and `.ics` lines long enough that a strict calendar client would reject the
+file.
 
 ## Build the book
 
@@ -79,7 +91,7 @@ default; hosted APIs need an explicit `WEALFORGE_ALLOW_PAID=1`.
 ./wf finetune       # QLoRA/Colab/Axolotl/LLaMA-Factory configs into training/
 ./wf eval --self-check              # style + gate grades on the committed assets, no model needed
 ./wf site                           # build docs/ — the folder you actually publish (./wf site --check to verify only)
-python3 -m unittest discover -s tests -q     # 246 tests, no network
+python3 -m unittest discover -s tests -q     # 263 tests, no network
 ```
 
 Twenty-one modules; `wealforge/README.md` has the architecture and the extension points, and

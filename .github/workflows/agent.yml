@@ -170,6 +170,15 @@ jobs:
           fi
           python3 -m wealforge run $FLAGS
 
+      - name: The free tool — its arithmetic, run headlessly
+        run: |
+          # The planner is the only interactive thing in this portfolio and the only one a reader
+          # trusts with tomorrow's schedule, so the workflow executes it instead of reading its
+          # markup. Nine rota patterns through go(), plus the .ics bytes and the error paths. Where
+          # node is absent the script prints SKIP and exits 0; tests/test_planner.py carries the
+          # same skip, so the gap is visible in both places rather than hidden in one.
+          bash tools/ci/planner-check.sh
+
       - name: Site build — docs/ matches its sources, every link resolves
         run: |
           # ./wf site is the only thing that turns the markdown into a deployable folder, so the
