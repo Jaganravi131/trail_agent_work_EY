@@ -15,7 +15,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from . import dataset, evalkit, finetune, gate, llm, modelhub, models, pipeline, store, validate
+from . import dataset, evalkit, finetune, gate, llm, modelhub, models, pipeline, site, store, validate
 
 
 # ----------------------------------------------------------------- model ----
@@ -142,6 +142,37 @@ def cmd_finetune(args: argparse.Namespace) -> int:
 
 
 # ------------------------------------------------------------------- eval ----
+# ------------------------------------------------------------------- site ----
+def cmd_site(args: argparse.Namespace) -> int:
+    """Build (and optionally enforce) the deployable folder under `docs/`.
+
+    `--check` is the part that earns its keep: a page that links to a page which does not
+    exist is a 404 in production and a warning here, and an undisclosed affiliate link is an
+    FTC problem that costs one line to prevent.
+    """
+    res = site.build(".", out_dir=args.out or site.DEFAULT_OUT, config_path=args.config,
+                     check=args.check)
+    md = site.report_markdown(res, args.out or site.DEFAULT_OUT)
+    if args.report:
+        rp = Path(args.report)
+        rp.parent.mkdir(parents=True, exist_ok=True)
+        rp.write_text(md, encoding="utf-8")
+    print(f"site: {len([p for p in res.pages if p.kind in ('article', 'page')])} prose page(s), "
+          f"{len(res.written)} file(s) → {args.out or site.DEFAULT_OUT}/  ·  "
+          f"{len(res.errors)} error(s), {len(res.warnings)} warning(s)")
+    for e in res.errors:
+        print(f"  [ERROR] {e}", file=sys.stderr)
+    for w in res.warnings:
+        print(f"  [warn ] {w}")
+    if res.affiliate_pages:
+        print(f"  disclosure injected on: {', '.join(sorted(set(res.affiliate_pages)))}")
+    with store.open_store(args.db) as st:
+        st.event("site", args.out or site.DEFAULT_OUT,
+                 {"pages": len(res.pages), "errors": len(res.errors), "warnings": len(res.warnings),
+                  "affiliate_pages": len(set(res.affiliate_pages)), "written": len(res.written)})
+    return 0 if (res.ok or args.allow_fail) else 1
+
+
 def cmd_eval(args: argparse.Namespace) -> int:
     if args.compare:
         return _eval_compare(args)
@@ -330,6 +361,18 @@ def add_commands(sub: Any) -> None:
     sp.add_argument("--base", help="override base model (default: from the dataset's recommendation)")
     sp.add_argument("--db")
     sp.set_defaults(fn=cmd_finetune)
+
+    sp = sub.add_parser("site", help="build the deployable mini-site (docs/) and enforce its link graph")
+    sp.add_argument("--out", default=site.DEFAULT_OUT, help="output folder (GitHub Pages serves this)")
+    sp.add_argument("--config", help="site config (default config/site.json)")
+    sp.add_argument("--check", action="store_true",
+                    help="verify without writing: dangling internal links, orphans, undisclosed "
+                         "affiliate links, placeholders and gate errors all fail the build anyway")
+    sp.add_argument("--allow-fail", dest="allow_fail", action="store_true",
+                    help="print the findings but exit 0 (weekly cron noise reduction)")
+    sp.add_argument("--report", help="also write a build report here")
+    sp.add_argument("--db")
+    sp.set_defaults(fn=cmd_site)
 
     sp = sub.add_parser("eval", help="grade the work: task cases, adversarial battery, style metrics")
     sp.add_argument("--cases", default="config/eval_prompts.json")

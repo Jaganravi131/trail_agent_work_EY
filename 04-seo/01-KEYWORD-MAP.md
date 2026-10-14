@@ -20,10 +20,10 @@ A new domain cannot win "shift work sleep disorder" (domain authority + medical 
 | T2 | why can't I sleep after night shift | low | problem | art. 01 §1 |
 | T2 | is it bad to drink coffee at 4am | low | permission | art. 03 §2 |
 | T3 long-tail — instant wins, low volume, high conversion | | | | |
-| T3 | blackout curtains vs eye mask for day sleeping | low | commercial | art. 01 §4 + product link |
+| T3 | blackout curtains vs eye mask for day sleeping | low | commercial | **/blackout-curtains-eye-mask/** (shipped 2026-10-14; art. 01 §4 links into it) |
 | T3 | caffeine half life 5 hours meaning | low | understanding | art. 03 §1 |
 | T3 | can i drink coffee after midnight shift | low | permission | art. 03 |
-| T3 | night shift meal prep no microwave | **very low** | commercial how-to | art. 02 §5 |
+| T3 | night shift meal prep no microwave | **very low** | commercial how-to | **/no-microwave-meal-prep/** (shipped 2026-10-14; art. 02 §5 hands off to it) |
 | T3 | 12 hour shift schedule health effects | low-med | informational | art. 01 §1 (defensible, cited) |
 | T3 | 90 minute nap before a shift | **very low** | how-to | art. 04 §3 |
 | T3 | sleep inertia after a nap | low | mechanism | art. 04 §2 (the 30–60 min trap) |
@@ -40,25 +40,32 @@ A new domain cannot win "shift work sleep disorder" (domain authority + medical 
 
 ## Site architecture (12 pages, then stop)
 
+The address below is not owned by anyone: the live host comes from `base_url` in
+`config/site.json`, which is also what turns canonicals and `sitemap.xml` on (see `04-seo/02-DEPLOY.md`).
+
 ```
-shiftreset.tools/
-├── /                       home: the tool + 3 pillar cards
-├── /planner/               the free tool (index.html)  ← link magnet
+/
+├── /                       home: a card for every page that exists (built)
+├── /planner/               the free tool — `03-tool/index.html`, copied in by `wf site` with its links rewritten  ← link magnet
 ├── /sleep-after-night-shift/        article 01  (pillar)
 ├── /what-to-eat-on-a-night-shift/   article 02  (pillar)
 ├── /caffeine-on-night-shift/        article 03  (pillar)
 ├── /4-on-4-off-sleep/               **shipped 2026-10-13** (was batch 2)
-├── /blackout-curtains-eye-mask/     batch 2  (affiliate disclosure)
-├── /earplugs-day-sleeping/          batch 2
-├── /no-microwave-meal-prep/         batch 2
-├── /days-off-reset/                 batch 2
+├── /blackout-curtains-eye-mask/     **shipped 2026-10-14** (the builder injects the disclosure when a shop link appears)
+├── /earplugs-day-sleeping/          batch 2  ← still unwritten; `./wf site --check` is what keeps "unwritten" from becoming a 404
+├── /no-microwave-meal-prep/         **shipped 2026-10-14**
+├── /days-off-reset/                 batch 2  ← still unwritten
 ├── /nap-before-shift/               **shipped 2026-10-13** (was batch 3)
-├── /book/                           single sales page → Amazon
+├── /book/                           single sales page — **shipped 2026-10-14**, and it says plainly that the store listing is a human 20-minute task rather than promising a link that does not exist yet
 └── /about/ + /editorial-policy/     **shipped 2026-10-13** — E-E-A-T: who wrote it, what
     this isn't, and the corrections table that has to stay visible
 ```
 
-12 pages, then re-evaluate. Not 60. A 60-page thin site in 2026 is a negative signal, and it's also 60 hours you'll never get back.
+12 pages, then re-evaluate. Not 60. (`./wf site --check` prints how many exist and refuses to
+build a page that links to one that does not.) The 8 photo slots wait for real images in
+`04-seo/images/`; until each one lands the build renders a labelled box instead of a torn icon.
+
+A 60-page thin site in 2026 is a negative signal, and it's also 60 hours you'll never get back.
 
 ## Internal linking rule
 
@@ -84,7 +91,7 @@ Every pillar links to **two** other pillars + the tool + /book/. The tool links 
 | Week | Ships |
 |---|---|
 | 1 | Tool live, 3 pillars live, /about/, /editorial-policy/ — **the last two shipped early, see `04-seo/pages/`** |
-| 2 | 4 batch-2 pages, backlink outreach to 10 free/no-cost places |
+| 2 | three of the batch-2 pages are already live, so this week is outreach plus the `/earplugs-day-sleeping/` and `/days-off-reset/` pair |
 | 3 | 4 more pages, first 5 Reddit/LinkedIn value posts |
 | 4 | /nap-before-shift/ and /4-on-4-off-sleep/ — already shipped, so spend this week on the review-the-numbers pass and fixing the weakest 2 pages instead |
 

@@ -205,12 +205,45 @@ def _in_struck(spans: list[tuple[int, int]], pos: int) -> bool:
 #: the bullet it opens — not the whole preceding paragraph.
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+|\n\s*(?:[-*>+]\s+|\d+[.)]\s+)")
 
+#: A line that is a list item, in any of the spellings these documents use.
+_BULLET = re.compile(r"^(?:[-*>+]\s+|\d+[.)]\s+|\|)")
+
 
 def _before_on_line(text: str, start: int) -> str:
     """Same line, up to the match. A quoted example of a bad credential is cited, not claimed,
     and the citation marker is always on the same line as the quote."""
     ls = text.rfind("\n", 0, start) + 1
     return text[ls:start]
+
+
+def _lead_in_prohibits(text: str, start: int) -> bool:
+    """Does this bullet sit under a lead-in that forbids what it says?
+
+    A refusal list is how compliance copy is actually written: a line ending in a colon, then one
+    bullet per forbidden thing, each quoting the wording it forbids ("Not allowed anywhere: / - Any
+    claim to treat, cure or prevent a disease"). The bullets inherit that lead-in's polarity. Without
+    this the gate flags the paragraph that states its own rules — and a checker that cries wolf on the
+    compliance doc gets switched off, which is worse than no checker.
+
+    The trade is the same one every guard here makes: a real violation smuggled into a refusal list is
+    let through. That is why the suppression is counted in the report's audit trail, and why the lead-in
+    has to be both a *denial* and a *list header* — not just any line that happens to contain "no".
+    """
+    lines = text.splitlines()
+    idx = text.count("\n", 0, start)
+    if idx >= len(lines) or not _BULLET.match(lines[idx].strip()):
+        return False                       # only list items inherit a lead-in
+    j = idx - 1
+    while j >= 0:
+        prev = lines[j].strip()
+        if not prev:
+            j -= 1
+            continue
+        if _BULLET.match(prev):
+            j -= 1                         # still inside the same run of bullets
+            continue
+        return bool(prev.endswith(":") and (NEGATION.search(prev) or _PROHIBITION_START.search(prev)))
+    return False
 
 
 def _prohibited_context(text: str, start: int, end: int) -> bool:
@@ -221,6 +254,8 @@ def _prohibited_context(text: str, start: int, end: int) -> bool:
     if _PROHIBITION_START.match(sentence):
         return True                      # imperative prohibition: "No fake reviews." / "**Not** X"
     if NEGATION.search(sentence):
+        return True
+    if _lead_in_prohibits(text, start):
         return True
     # Same-line prefix, checked last so it can only ever *widen* the guard by one line.
     # Deliberately looks only BEFORE the match: "cures insomnia … never drive drowsy" is a

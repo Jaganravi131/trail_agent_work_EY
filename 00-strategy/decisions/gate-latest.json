@@ -1,8 +1,18 @@
 [
  {
+  "target": "03-tool/README.md",
+  "passed": true,
+  "words": 647,
+  "audience": "internal",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {},
+  "findings": []
+ },
+ {
   "target": "03-tool/index.html",
   "passed": true,
-  "words": 4319,
+  "words": 4396,
   "audience": "reader",
   "errors": 0,
   "warnings": 0,
@@ -14,7 +24,7 @@
  {
   "target": "04-seo/01-KEYWORD-MAP.md",
   "passed": true,
-  "words": 986,
+  "words": 1143,
   "audience": "internal",
   "errors": 0,
   "warnings": 0,
@@ -22,6 +32,26 @@
    "negated:H1": 1,
    "negated:X1": 3
   },
+  "findings": []
+ },
+ {
+  "target": "04-seo/02-DEPLOY.md",
+  "passed": true,
+  "words": 1043,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {},
+  "findings": []
+ },
+ {
+  "target": "04-seo/README.md",
+  "passed": true,
+  "words": 651,
+  "audience": "internal",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {},
   "findings": []
  },
  {
@@ -98,6 +128,38 @@
    "negated:M1": 1,
    "negated:X1": 1
   },
+  "findings": []
+ },
+ {
+  "target": "04-seo/pages/03-book.md",
+  "passed": true,
+  "words": 1085,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {},
+  "findings": []
+ },
+ {
+  "target": "04-seo/pages/04-no-microwave-meal-prep.md",
+  "passed": true,
+  "words": 1390,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {
+   "disease_words_without_claim": 1
+  },
+  "findings": []
+ },
+ {
+  "target": "04-seo/pages/05-blackout-curtains-eye-mask.md",
+  "passed": true,
+  "words": 1303,
+  "audience": "reader",
+  "errors": 0,
+  "warnings": 0,
+  "stats": {},
   "findings": []
  }
 ]

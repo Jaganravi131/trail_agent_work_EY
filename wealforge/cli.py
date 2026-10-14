@@ -15,7 +15,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
-from . import (__version__, dataset, evalkit, finetune, gate, generator, kdp, llm, metrics, modelhub,
+from . import (__version__, dataset, evalkit, finetune, gate, generator, kdp, llm, metrics, modelhub, site,
                models, pipeline, roadmap, rubric as rubric_mod, scan, store, validate)
 from . import commands
 
@@ -352,6 +352,11 @@ def cmd_run(args: argparse.Namespace) -> int:
         db=args.db, cases="config/eval_prompts.json", grade=None, pattern=["**/*.md"],
         provider="offline", self_check=True, no_repo_grade=False, strict=False, json=False,
         out="00-strategy/decisions/eval-latest.md", compare=None, tolerance=2.0))
+    print("\n— rebuild the deployable site (docs/) — what CI publishes must match its sources\n")
+    rc3 = commands.cmd_site(argparse.Namespace(db=args.db, out=site.DEFAULT_OUT, check=False,
+                                               config=None, allow_fail=args.allow_fail,
+                                               report="00-strategy/decisions/site-latest.md"))
+    rc |= 0 if args.allow_fail else rc3
     print("\n" + "=" * 72 + "\n")
     rc |= cmd_report(argparse.Namespace(tracker=args.tracker, out="00-strategy/decisions/report-latest.md",
                                          days_live=30, cover_tested=False, db=args.db))

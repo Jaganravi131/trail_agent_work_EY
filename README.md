@@ -63,6 +63,7 @@ default; hosted APIs need an explicit `WEALFORGE_ALLOW_PAID=1`.
 ./wf dataset        # fine-tuning corpus from gate-passing approved assets — or the "not yet" verdict
 ./wf finetune       # QLoRA/Colab/Axolotl/LLaMA-Factory configs into training/
 ./wf eval --self-check              # style + gate grades on the committed assets, no model needed
+./wf site                           # build docs/ — the folder you actually publish (./wf site --check to verify only)
 python3 -m unittest discover -s tests -q     # 158 tests, no network
 ```
 

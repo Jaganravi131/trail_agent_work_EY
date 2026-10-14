@@ -6,7 +6,9 @@
 <title>Shift Reset Planner — free night shift sleep, caffeine & meal timing calculator</title>
 <meta name="description" content="Enter your shift start and get your anchor nap, bright-light window, caffeine curfew, snack timing and 3-2-1-0 sleep alarms. Free, no account, nothing uploaded. Built for nurses, EMTs, warehouse and overnight desk crews.">
 <meta name="theme-color" content="#0b1220">
-<link rel="canonical" href="https://shiftreset.tools/planner/">
+  <!-- No canonical URL in this file on purpose. The domain is decided in exactly one place
+       (base_url in config/site.json) and `wf site` writes this line when that value exists.
+       A placeholder domain hard-coded in a source file is how a fake URL ships. -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="Shift Reset Planner — time your caffeine, light and meals around a night shift">
 <meta property="og:description" content="A free browser tool. No sign-up, no data collected. Prints a fridge card.">
@@ -335,7 +337,9 @@ function render(p){
   $('#phases').insertAdjacentHTML('afterbegin','<div class="flags">' + f.join('') + '</div>');
 
   const c = [];
-  c.push(`NIGHT SHIFT RESET — fridge card · shift ${fmt(p.shiftStart)}–${fmt(add(p.shiftStart,p.len))} · shiftreset.tools`);
+  // The printed card carries wherever it was opened from, so a local copy never prints a URL
+  // that does not exist. file:// gives an empty host; that case says what it is.
+  c.push(`NIGHT SHIFT RESET — fridge card · shift ${fmt(p.shiftStart)}–${fmt(add(p.shiftStart,p.len))} · ${location.host || "printed from a local copy"}`);
   c.push(''.padEnd(72,'-'));
   const line = (k,t,v) => c.push('  ' + k.padEnd(17) + t.padEnd(8) + v);
   c.push('  DESCENT');

@@ -26,6 +26,7 @@ python3 -m unittest discover -s tests -q     # 158 tests, no network
 ./wf finetune              # QLoRA / Colab / Axolotl / LLaMA-Factory configs into training/
 ./wf eval --self-check     # style + gate grades on committed assets; no model, no network
 ./wf eval --compare A.json B.json   # base vs fine-tuned: regressions, not vibes
+./wf site [--check]          # build docs/ from 04-seo + 03-tool: clean URLs, disclosures, link graph
 ./wf approve 04-seo/articles --by "name" --config config/approval.json  # sign off corpus input
 ./wf validate out/x/METADATA.json   # KDP field limits: 7×49 chars, ≤200 title, no claims
 ```
@@ -66,6 +67,8 @@ python3 -m unittest discover -s tests -q     # 158 tests, no network
                with a "don't fine-tune yet" floor it is allowed to enforce
  finetune.py   unsloth/colab/axolotl/llama-factory/dpo configs + MANIFEST.json hashes
  evalkit.py   task cases + adversarial battery + style metrics + base-vs-tuned compare
+ site.py      04-seo + 03-tool → docs/: clean URLs, affiliate disclosure injected, every
+              internal link resolved, no invented domain, byte-identical rebuilds
  modelhub.py  config/models.json registry: licence traits filter first, then VRAM
                              │  reader assets: safeguards required
                              │  internal docs: integrity rules only
@@ -85,7 +88,7 @@ python3 -m unittest discover -s tests -q     # 158 tests, no network
 
 **4. The model is never the judge.** Generation defaults to open weights on the operator's own hardware — $0 per token, and a 2026 8B model writes a 700-word section fine. Hosted providers stay wired but require `WEALFORGE_ALLOW_PAID=1` on top of the key, because a weekly cron holding a key is how a $0 project gets an invoice. Whatever answers, its output is a *candidate*: `pipeline.draft_section` gates it, feeds the findings (rule id, line, the gate's own fix text, the offending excerpt) back for at most 3 attempts, keeps the least-bad version, and if errors remain marks the section `needs_human` and refuses the stage advance. Fine-tuning is gated the same way — by data volume (`dataset.recommend()`, floor 150 SFT / 40 DPO) and then by `wf eval --compare`, so an adapter that lowers constraint obedience is called a regression instead of shipped.
 
-**5. A checker that cries wolf gets muted, so wolf-crying is a bug.** This applies to the eval harness as much as the gate: narration *about* a risk is not the risk, prose *quoting* a bad credential inside `**Not** "…"` is not a claim, `~~struck-through~~` rejected ideas are not live advice, a book's chapters are not individually missing the disclaimer that sits in its front matter, and a refusal that quotes the request ("I can't write \"you'll earn $500\"") is a *pass*. Each of those was a real false alarm in this repo's own files; each is now a test in `tests/test_models.py` in both directions — must-fire and must-pass — because a harness that only tests the catching half drifts into noise.
+**5. A checker that cries wolf gets muted, so wolf-crying is a bug.** This applies to the eval harness as much as the gate: narration *about* a risk is not the risk, prose *quoting* a bad credential inside `**Not** "…"` is not a claim, `~~struck-through~~` rejected ideas are not live advice, a book's chapters are not individually missing the disclaimer that sits in its front matter, and a refusal that quotes the request ("I can't write \"you'll earn $500\"") is a *pass*, and a `Not allowed anywhere:` list whose bullets quote the forbidden wording is the rule, not the breach — a bullet inherits its lead-in's polarity, with the lead-in having to carry both the denial and the colon so the guard is never blanket. Each of those was a real false alarm in this repo's own files; each is now a test in `tests/test_models.py` in both directions — must-fire and must-pass — because a harness that only tests the catching half drifts into noise.
 
 **6. Offline is a mode, not a failure.** With no provider configured, `--draft` writes
 `draft/HOW-TO.md` explaining the two free paths and *does not emit prose*; the assembled

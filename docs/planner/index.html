@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shift Reset Planner — free night shift sleep, caffeine & meal timing calculator</title>
+<meta name="description" content="Enter your shift start and get your anchor nap, bright-light window, caffeine curfew, snack timing and 3-2-1-0 sleep alarms. Free, no account, nothing uploaded. Built for nurses, EMTs, warehouse and overnight desk crews.">
+<meta name="theme-color" content="#0b1220">
+  <!-- No canonical URL in this file on purpose. The domain is decided in exactly one place
+       (base_url in config/site.json) and `wf site` writes this line when that value exists.
+       A placeholder domain hard-coded in a source file is how a fake URL ships. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Shift Reset Planner — time your caffeine, light and meals around a night shift">
+<meta property="og:description" content="A free browser tool. No sign-up, no data collected. Prints a fridge card.">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230b1220'/><circle cx='16' cy='16' r='9' fill='none' stroke='%23f2a33c' stroke-width='2.5'/><path d='M16 10a6 6 0 1 0 6 6 7.5 7.5 0 0 1-6-6z' fill='%23f2a33c'/></svg>">
+<style>
+  :root{
+    --navy:#0b1220; --navy2:#131c2e; --line:#243049;
+    --ink:#f4f1ea; --muted:#a7b2c4; --amber:#f2a33c; --amber-dim:#c9832a;
+    --good:#5fd39b; --warn:#ff8a7a; --card:#101a2b;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--navy);color:var(--ink);
+    font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  a{color:var(--amber)}
+  .wrap{max-width:940px;margin:0 auto;padding:28px 18px 80px}
+  header.top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .mark{width:26px;height:26px;border-radius:7px;background:var(--amber);flex:0 0 auto;
+    display:grid;place-items:center;color:var(--navy);font-weight:800;font-size:15px}
+  .brand{font-weight:700;letter-spacing:.02em}
+  h1{font-size:clamp(1.6rem,5vw,2.4rem);line-height:1.15;margin:22px 0 8px;letter-spacing:-.01em}
+  .sub{color:var(--muted);max-width:62ch;margin:0 0 24px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  label{display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px}
+  input[type=time],select{width:100%;padding:11px 10px;border-radius:9px;background:var(--navy2);
+    color:var(--ink);border:1px solid var(--line);font-size:1.02rem;font-family:var(--mono)}
+  input:focus,select:focus,button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  button{background:var(--amber);color:var(--navy);border:0;border-radius:9px;padding:12px 18px;
+    font-weight:700;font-size:.98rem;cursor:pointer}
+  button.ghost{background:transparent;color:var(--amber);border:1px solid var(--amber-dim)}
+  .err{color:var(--warn);font-size:.9rem;margin-top:10px;min-height:1.2em}
+  h2{font-size:1.15rem;margin:30px 0 12px;letter-spacing:.01em}
+  .phase{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:var(--amber);margin:26px 0 8px;font-weight:700}
+  .item{display:grid;grid-template-columns:112px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+  .item:first-of-type{border-top:0}
+  .t{font-family:var(--mono);font-weight:700;font-size:1.02rem;white-space:nowrap}
+  .t small{display:block;font-family:system-ui;color:var(--muted);font-weight:400;font-size:.72rem}
+  .d{color:#d6dbe5}
+  .d b{color:var(--ink)}
+  .note{color:var(--muted);font-size:.86rem;margin-top:3px}
+  .flags{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+  .flag{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:.8rem;color:var(--muted)}
+  .flag.bad{border-color:#6b3a34;color:var(--warn)}
+  .flag.ok{border-color:#2f5c48;color:var(--good)}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.92rem}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+  td.n{font-family:var(--mono)}
+  .bar{height:7px;border-radius:4px;background:linear-gradient(90deg,var(--amber),var(--amber-dim))}
+  .bar.low{opacity:.45}
+  .two{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .cta{margin-top:30px;border:1px solid var(--amber-dim);border-radius:14px;padding:18px 20px;
+    background:linear-gradient(180deg,rgba(242,163,60,.09),transparent)}
+  .cta h3{margin:0 0 6px;font-size:1.06rem}
+  .cta p{margin:0 0 12px;color:var(--muted);font-size:.94rem;max-width:70ch}
+  .tiny{font-size:.8rem;color:var(--muted)}
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:.82rem}
+  @media print{
+    body{background:#fff;color:#111}
+    .wrap{max-width:none;padding:0}
+    .noprint,footer,.cta,header.top,.err{display:none!important}
+    .panel{border:1px solid #999;background:#fff}
+    .item,.t,.d,.note,th,td{color:#111}
+    .t small{color:#555}
+    .phase{color:#111}
+    h1{font-size:20pt}
+  }
+</style>
+  <!-- served alongside the site styles -->
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="mark" aria-hidden="true">N</div>
+    <div class="brand">Shift Reset Planner</div>
+    <span class="tiny" style="margin-left:auto">no account · nothing uploaded</span>
+  </header>
+
+  <h1>What to do at 3&nbsp;a.m., and when to stop the coffee</h1>
+  <p class="sub">Enter your shift window. You get an anchor-meal time, a caffeine curfew with the half-life math shown, a light plan, a nap window, and a printable fridge card. <b>No sign-up, no cookies, no analytics, works offline once loaded.</b></p>
+
+  <section class="panel" aria-label="Shift settings">
+    <div class="grid">
+      <div>
+        <label for="start">Shift start</label>
+        <input type="time" id="start" value="19:00" step="900" inputmode="numeric">
+      </div>
+      <div>
+        <label for="end">Shift end</label>
+        <input type="time" id="end" value="07:00" step="900" inputmode="numeric">
+      </div>
+      <div>
+        <label for="breaks">Breaks I realistically get</label>
+        <select id="breaks">
+          <option value="none">None / grab-as-you-work</option>
+          <option value="short">One short (≤10 min)</option>
+          <option value="two" selected>Two (20+ min each)</option>
+        </select>
+      </div>
+      <div>
+        <label for="lights">Sleep setup</label>
+        <select id="lights">
+          <option value="blackout">Blackout + quiet</option>
+          <option value="some" selected>Some light or noise</option>
+          <option value="bad">Bright / shared room / kids</option>
+        </select>
+      </div>
+      <div>
+        <label for="caff">Caffeine tolerance</label>
+        <select id="caff">
+          <option value="low">Low / sensitive</option>
+          <option value="mid" selected>Moderate (~300 mg/day)</option>
+          <option value="high">High (~400+ mg/day)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:.92rem;color:var(--ink)">
+        <input type="checkbox" id="napok" checked style="width:18px;height:18px;accent-color:var(--amber)">
+        I can nap before shift
+      </label>
+      <button id="calc" type="button">Build my plan</button>
+      <button class="ghost noprint" id="print" type="button">Print / PDF</button>
+      <button class="ghost noprint" id="ics" type="button">Download alarms (.ics)</button>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+  </section>
+
+  <div id="out" hidden>
+    <h2>Your sequence</h2>
+    <div id="phases"></div>
+
+    <div class="two">
+      <section class="panel">
+        <h2 style="margin-top:0">Caffeine, and why the curfew is where it is</h2>
+        <div id="caff"></div>
+        <p class="note">Assumes ~5 h half-life, one 200 mg dose at dose&nbsp;1 and 100 mg at dose&nbsp;2. Real half-life ranges ~2–10 h (faster if you smoke, slower in pregnancy and with some medications). Educational only — not medical advice.</p>
+      </section>
+      <section class="panel">
+        <h2 style="margin-top:0">Totals</h2>
+        <table id="totals"></table>
+        <p class="note">The 24-hour total is the number that matters, not the per-night one.</p>
+      </section>
+    </div>
+
+    <h2>Fridge card</h2>
+    <section class="panel" id="card" style="font-family:var(--mono);font-size:.9rem;white-space:pre;overflow:auto;line-height:1.5"></section>
+  </div>
+
+  <section class="cta">
+    <h3>The 28-day version of this</h3>
+    <p>The planner gives you one day. <b>The Night Shift Reset</b> gives you the sequence for four weeks — one rule added per day, a 2-minute log, and the calibration maths so the numbers end up tuned to you rather than to a study. ~12,000 words, no supplement pitches, no clinician cosplay. Includes the worksheet pack and the rota-change script.</p>
+    <p><button type="button" onclick="alert('Replace this with your live Amazon link before publishing. Keep it a plain anchor tag for print and for email clients.')">On Amazon — ebook $3.99</button></p>
+    <p class="tiny">Affiliate disclosure: if links on this page ever point to products via an associate program, that will be stated here in plain words on the same page as the link. Today there are no affiliate links on it.</p>
+  </section>
+
+  <footer>
+    <p><b>Safety first.</b> Never drive when drowsy — pull over somewhere safe, 200 mg caffeine, 20-minute nap, then reassess. This tool and the book are educational, not medical advice, and make no claim to diagnose, treat or prevent anything. If you snore and wake unrefreshed, or you can't sleep regardless of setup, that's a conversation for a clinician rather than a planner. Never change a safety-critical work practice against your employer's protocol.</p>
+    <p>Everything runs in your browser. Settings are saved to this device only, so a return visit is faster. No server sees any of it. &copy; 2026 — Shift Reset Planner, built alongside <i>The Night Shift Reset</i>.</p>
+  </footer>
+</div>
+
+<script>
+/* ---------- time helpers ----------
+   All plan math happens in SHIFT-RELATIVE minutes (t=0 at shift start, t=len at clock-out).
+   Comparing clock-of-day minutes across midnight is what breaks naive shift calculators:
+   22:30 reads as "later" than 06:30 numerically, but in shift-relative time it's hour 3.5
+   vs hour 11.5. Clock strings are produced only at display time via L(). */
+const KEY = 'srp.v1';
+const toMin = s => { if(!s) return null; const [h,m] = s.split(':').map(Number);
+  return (isNaN(h)) ? null : h*60 + (m||0); };
+const wrap  = t => ((t % 1440) + 1440) % 1440;
+const fmt   = t => { const x = wrap(t); return `${String(Math.floor(x/60)).padStart(2,'0')}:${String(x%60).padStart(2,'0')}`; };
+const add   = (base, delta) => wrap(base + delta);
+
+const $ = s => document.querySelector(s);
+
+function readState(){
+  const start = toMin($('#start').value), end = toMin($('#end').value);
+  return { start, end, breaks:$('#breaks').value, lights:$('#lights').value,
+           caff:$('#caff').value, napok:!!$('#napok').checked };
+}
+function readStateRaw(){ const n={};
+  document.querySelectorAll('#start,#end,#breaks,#lights,#caff').forEach(el=>n[el.id]=el.value);
+  n.napok = $('#napok').checked; return n; }
+
+function buildPlan(s){
+  if (s.start === null || s.end === null) throw 'Set both a start and an end time.';
+  const start = s.start;
+  let len = wrap(s.end - start); if (len === 0) len = 1440;
+  if (len < 180) throw 'A shift under 3 hours doesn’t need a plan — take the nap and enjoy it.';
+
+  // A shift that ENDS in the sleep window (roughly 23:00–12:00) means you sleep after it.
+  // Anything else (a day shift) means the countdown runs in the evening instead.
+  const endsForSleep = (s.end >= 0 && s.end <= 720) || s.end >= 1380;
+  const daytime = !endsForSleep;
+
+  // shift-relative anchors
+  const rel = { end: len };
+  if (daytime) {
+    rel.bed = wrap(23*60 - start) >= len ? wrap(23*60 - start) : len + 300; // evening wind-down
+    rel.core = 450;                                                          // 7.5 h in one block
+  } else {
+    rel.bed = len + 90;   // commute, shower, small snack — 90 minutes, no errands
+    rel.core = 270;       // 4.5 h core = 3 sleep cycles
+  }
+  const bed = rel.bed;
+  rel.tFood  = bed - 180;      // 3-2-1-0: last food
+  rel.tCaff  = bed - 120;      // last caffeine (floor — 6 h before bed is the research-grade target)
+  rel.tLight = bed - 60;       // lights down
+  rel.wake   = bed + rel.core;
+
+  // caffeine placement
+  const ceiling = s.caff==='low'?200:(s.caff==='mid'?300:400);
+  const dose1mg = s.caff==='low'?100:200;
+  let   dose2mg = s.caff==='low'?50:100;
+  rel.d1 = -10;                                        // with the anchor meal, timed to the clock
+  const wanted = s.caff==='low' ? 150 : Math.min(len - 30, 270);
+  rel.d2 = Math.min(wanted, rel.tCaff);                // never later than the curfew
+  const d2Adjusted = rel.d2 < wanted;
+  if (d2Adjusted) dose2mg = Math.round(dose2mg * 0.75);
+
+  // on-shift food + light placement
+  rel.meal   = daytime ? 25 : -70;
+  rel.light1 = 20;
+  rel.slump  = Math.min(len*0.5, 360);
+  rel.snack1 = Math.round(len*0.28);
+  rel.snack2 = Math.round(len*0.55);
+  rel.snack3 = Math.round(len*0.78);
+  rel.nap     = s.napok ? -180 : null;
+  rel.napEnd  = s.napok ?  -90 : null;
+
+  const p = { ...s, shiftStart:start, len, daytime, endsForSleep, ceiling, dose1mg, dose2mg,
+              d2Adjusted, ...rel };
+  p.long = len >= 600;
+  p.total = (rel.core + (s.napok ? 90 : 0)) / 60;
+  if (rel.nap !== null) p.warnShortGap = (0 - rel.napEnd) < 150;   // <2.5h awake before shift
+  p.lightsNote = {
+    blackout:'Keep as is — your room is not the bottleneck, your consistency is.',
+    some:'Towel at the door + foil or a duvet taped over the window: 12 minutes, no purchase.',
+    bad:'3D-cup eye mask + earplugs + a fan. If the room can’t be dark, change where you sleep, not how hard you try.'
+  }[s.lights];
+  p.breaksNote = {
+    none:'Eat one-handed, tier A only. If a real break lands, spend it sitting still and looking far away rather than eating.',
+    short:'Ten minutes, in this order: light → movement → food.',
+    two:'First break with the anchor meal, second with a tier-A snack. Do not bank both at hour 9.'
+  }[s.breaks];
+  return p;
+}
+
+/* Caffeine on board, from the first dose to 4 h after bed. ~5 h half-life. */
+function caffTable(p){
+  const doses = [[p.d1, p.dose1mg], [p.d2, p.dose2mg]];
+  const marks = [
+    ['you clock out', p.end], ['lights out', p.bed],
+    ['+2 h in bed', p.bed+120], ['+4 h in bed', p.bed+240],
+  ];
+  if (p.d2 > 0) marks.push(['hour after last dose', p.d2 + 60]);
+  marks.sort((a,b) => a[1] - b[1]);          // chronological, always
+  return marks.map(([name,t]) => {
+    let mg = 0;
+    for (const [d, m0] of doses) { const dt = (t - d) / 60; if (dt >= 0) mg += m0 * Math.pow(0.5, dt/5); }
+    return { name, t, mg };
+  }).filter((r,i,a) => i === 0 || r.t - a[i-1].t >= 20);
+}
+
+/* ---------- render ---------- */
+function item(t, title, body, note){
+  return `<div class="item"><div class="t">${t}<small>${title}</small></div>
+    <div><div class="d">${body}</div>${note?`<div class="note">${note}</div>`:''}</div></div>`;
+}
+
+function render(p){
+  const L = t => fmt(add(p.shiftStart, t));   // rel minutes → clock string
+
+  const ph = [];
+  ph.push(`<div class="phase">Descent — before you leave</div>` +
+    (p.nap !== null ? item(L(p.nap),'anchor nap',`<b>90 minutes, alarm on</b>, phone across the room. Not “resting your eyes”. If you always wake feeling worse, cut to 60, then 45.`,'Never extend the nap to make up for a bad night. That is the death spiral of night work.') : '') +
+    item(L(Math.max(0, (p.napEnd ?? p.meal) - 10)),'light',`10 minutes bright: outside if there's daylight left, otherwise every light you own — kitchen counter, 60 seconds.`,'Moves the clock, and gives a measured alertness bump without a drug.') +
+    item(L(p.meal), p.daytime?'first-hour meal':'anchor meal',`Hot, <b>30 g protein</b>. Your main meal belongs ${p.daytime?'in the first hour':'at shift start'} — not at 04:00. Digestion is under circadian control; a 900-calorie plate at 4 a.m. buys reflux and a collapse 90 minutes later.`,'Eggs + toast · chilli + a cheese sandwich · tuna, mayo, sweetcorn · yoghurt with protein stirred through. Small and protein-forward beats large and late.') +
+    item(L(p.d1),'caffeine #1',`<b>${p.dose1mg} mg</b>, with food, water alongside. Timed to the clock, not to the first crisis.`));
+
+  ph.push(`<div class="phase">Hold — on shift</div>` +
+    item(L(p.light1),'bright light',`Ten minutes under the corridor LEDs, by the loading-bay floodlight, in front of an open freezer door. Silly, free, and the only lever with real force on your clock.`) +
+    item(L(p.snack1),'snack, tier A',`Yoghurt + cheese string, or nuts + UHT milk, or two boiled eggs. <b>12–20 g protein.</b> Written on a card the day before: a decision you've already made is a decision the 03:00 version of you doesn't have to make.`) +
+    item(L(p.slump),'the slump',`Light → movement → cold water on face and wrists → talk to a human → <i>then</i> food, in that order. A biscuit is 40 minutes of glucose and 90 minutes of worse fatigue.${p.long?' If your rules allow it: 15–20 minutes eyes closed, alarm on.':''}`) +
+    (p.snack2 !== p.snack1 ? item(L(p.snack2),'snack',`Same tier A. Nothing new decided, nothing discovered in the vending machine.`) : '') +
+    (p.long ? item(L(p.snack3),'last snack',`Savoury, small, ~200 calories. Then stop: food finishes at <b>${L(p.tFood)}</b>, three hours before bed, so your gut isn't still on shift when you are off it.`) : '') +
+    item(L(p.d2),`caffeine #2 — last`,  `<b>${p.dose2mg} mg, hard stop at hour ${(p.d2/60).toFixed(1)}.</b> After this: decaf, water, milk tea from a flask.${p.d2Adjusted?` <span style="color:var(--warn)">Moved earlier than you'd like — a dose any later still leaves roughly ${Math.round(p.dose2mg * Math.pow(0.5,(p.bed-p.d2)/300))} mg in your bloodstream at lights-out.</span>`:''}`));
+
+  ph.push(`<div class="phase">Reentry — the 90 minutes that decide your day</div>` +
+    item(L(p.end),'the drive',`Sunglasses <b>on before you leave the building</b> — that's part of your sleep intervention, not a style choice. No coffee stop at the end of shift: that would be dose 3, ${Math.max(0,Math.round((p.bed-p.end)))} minutes before bed. Any of these → pull over somewhere safe, alarm, 20 minutes: drifting in the lane, missing your usual exit, no memory of the last mile.`,'Two or more shifts in a row under ~10 h total sleep: do not drive. Sleep 20 minutes in the car in a safe place first, or swap the lift, or leave the car and drive after sleep.') +
+    item(L(p.end+12),'straight in, straight to the shower',`Nothing that isn't moving toward the bed. The bin, the dishwasher and that text message can all wait until ${L(p.wake+60)}.`) +
+    item(L(Math.max(p.end+15, p.tFood-40)),'small final snack',`Yoghurt, eggs, toast and cheese — whatever is already out, nothing cooked. Set it by the bedside <b>before</b> bed so the mid-day wake doesn't require a decision.`) +
+    item(L(p.tLight),'light curtain down',`Towel at the door, duvet or foil on the window, fan on, heating off, clock turned away, alarm for the nap set while you're still upright. Ten minutes of prep before you need it.`,'Setup: ' + p.lightsNote) +
+    item(L(p.bed),'bed',`3-2-1-0 already satisfied. Awake past 20 minutes? Out of the room, dim light, something boring and physical, back when sleepy — every time, no exceptions.`,'No arithmetic about hours remaining. That calculation is voluntary, and it is the most effective insomnia generator there is.') +
+    item(L(p.wake),'wake to the alarm',`Even after a bad one. <b>The wake time is the anchor, not the bedtime.</b> Ten minutes of light immediately.`,'Letting a bad night slide your wake to ' + L(p.wake+180) + ' is what wrecks the next shift’s descent.'));
+
+  $('#phases').innerHTML = ph.join('');
+
+  const rows = caffTable(p);
+  const max  = Math.max(...rows.map(r=>r.mg), 1);
+  $('#caff').innerHTML = `<table><thead><tr><th>When</th><th>Still active</th><th style="width:34%">Level</th></tr></thead><tbody>` +
+    rows.map(r=>`<tr><td>${L(r.t)}<br><span class="tiny">${r.name}</span></td><td class="n">${Math.round(r.mg)} mg</td>
+      <td><div class="bar ${r.mg<40?'low':''}" style="width:${Math.max(3, 100*r.mg/max)}%"></div></td></tr>`).join('') +
+    `</tbody></table><p class="note">Planned total <b>${p.dose1mg + p.dose2mg} mg</b> against your ceiling of ${p.ceiling} mg, and both doses finished by ${L(p.d2)}. Half-life assumed at ~5 h; the real range is ~2–10 h, so test it on the log rather than trusting this table.</p>`;
+
+  $('#totals').innerHTML =
+    `<tr><th>Core sleep</th><td class="n">${(p.core/60).toFixed(1)} h · ${L(p.bed)} → ${L(p.wake)}</td></tr>
+     <tr><th>Anchor nap</th><td class="n">${p.nap!==null ? `1.5 h at ${L(p.nap)}` : 'none — add it if you can'}</td></tr>
+     <tr><th>Total / 24 h</th><td class="n">${p.total.toFixed(1)} h${p.total<5.5 ? ' · under the floor, so the nap is load-bearing' : ''}</td></tr>
+     <tr><th>Shift length</th><td class="n">${(p.len/60).toFixed(1)} h</td></tr>
+     <tr><th>Longest wake stretch</th><td class="n">${(((p.bed - (p.napEnd ?? p.meal)) % 1440 + 1440) % 1440 / 60).toFixed(1)} h</td></tr>
+     <tr><th>Breaks</th><td>${p.breaksNote}</td></tr>`;
+
+  const f = [];
+  f.push(p.total >= 6 ? `<span class="flag ok">${p.total.toFixed(1)} h planned — realistic, not heroic</span>`
+                      : `<span class="flag">${p.total.toFixed(1)} h planned: tight, and the nap is the difference</span>`);
+  if (p.daytime) f.push('<span class="flag">day shift → the countdown runs in the evening; the on-shift meal moves into hour one</span>');
+  if (p.long)    f.push(`<span class="flag">${(p.len/60).toFixed(0)} h shift — the food cut-off matters more than the menu</span>`);
+  if (p.d2Adjusted) f.push('<span class="flag bad">curfew binding: your shift is long enough that the second dose had to move earlier</span>');
+  if (p.warnShortGap) f.push('<span class="flag bad">nap ends <2.5 h before shift: cut it to 45 min or you won’t be sleepy at lights-out</span>');
+  f.push('<span class="flag">educational only — not medical or safety advice</span>');
+  $('#phases').insertAdjacentHTML('afterbegin','<div class="flags">' + f.join('') + '</div>');
+
+  const c = [];
+  // The printed card carries wherever it was opened from, so a local copy never prints a URL
+  // that does not exist. file:// gives an empty host; that case says what it is.
+  c.push(`NIGHT SHIFT RESET — fridge card · shift ${fmt(p.shiftStart)}–${fmt(add(p.shiftStart,p.len))} · ${location.host || "printed from a local copy"}`);
+  c.push(''.padEnd(72,'-'));
+  const line = (k,t,v) => c.push('  ' + k.padEnd(17) + t.padEnd(8) + v);
+  c.push('  DESCENT');
+  if (p.nap !== null) line('nap', L(p.nap), '90 min, alarm');
+  line('anchor meal', L(p.meal), 'hot, 30 g protein');
+  line('caffeine 1', L(p.d1), `${p.dose1mg} mg with food`);
+  c.push('  HOLD');
+  line('bright light', L(p.light1), '10 min');
+  line('LAST CAFFEINE', L(p.d2), `${p.dose2mg} mg, then stop`);
+  line('last food', L(p.tFood), '3 h before bed');
+  c.push('  REENTRY');
+  line('sunglasses', L(p.end), 'on at the door');
+  line('lights down', L(p.tLight), 'no clock, fan on');
+  line('bed', L(p.bed), 'alarm set for wake');
+  line('wake', L(p.wake), 'fixed, even if bad');
+  c.push(''.padEnd(72,'-'));
+  c.push('  Never drive drowsy: safe stop, 200 mg caffeine, 20-min nap, reassess.');
+  c.push("  Between the door and the shower: nothing that isn't moving toward the bed.");
+  c.push('  Educational only — not medical advice. Read the disclaimer, ch. 1.');
+  $('#card').textContent = c.join('\n');
+
+  $('#out').hidden = false;
+  window.__plan = p;
+  window.__L = L;
+}
+
+/* ---------- .ics alarms (local time, no timezone line = floating; fine for a personal reminder) ---------- */
+function icsFor(p){
+  const stamp = t => {
+    const now = new Date(); const nowMin = now.getHours()*60 + now.getMinutes();
+    const clock = wrap(add(p.shiftStart, t));
+    const d = new Date(now); d.setSeconds(0,0);
+    // schedule at the next occurrence of that clock time
+    if (clock <= nowMin) d.setDate(d.getDate() + 1);
+    d.setHours(Math.floor(clock/60), clock%60);
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  };
+  const ev = (name,t) => ['BEGIN:VEVENT','UID:'+wrap(t)+'-'+name.replace(/\W/g,'')+'@shiftreset',
+    'DTSTART:'+stamp(t),'SUMMARY:'+name,
+    'DESCRIPTION:From the free Shift Reset Planner. Educational, not medical advice.',
+    'BEGIN:VALARM','TRIGGER:-PT0M','ACTION:DISPLAY','DESCRIPTION:'+name,'END:VALARM','END:VEVENT'].join('\r\n');
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//shiftreset//planner//EN','CALSCALE:GREGORIAN',
+    ...[
+      ['😴 Anchor nap (90 min)', p.nap ?? p.meal],
+      ['🍽 Anchor meal — 30 g protein', p.meal],
+      ['☕ Caffeine 1 (last dose is #2)', p.d1],
+      ['💡 10 min bright light', p.light1],
+      ['☕ Caffeine 2 — HARD STOP', p.d2],
+      ['🚫 Last food (T-3)', p.tFood],
+      ['🕶 Lights down, room ready (T-1)', p.tLight],
+      ['🛏 Bed. Turn the clock away.', p.bed],
+      ['⏰ Wake — fixed anchor, light on', p.wake],
+    ].map(([n,t])=>ev(n,t)),'END:VCALENDAR'].join('\r\n');
+}
+
+/* ---------- wiring ---------- */
+function go(){
+  $('#err').textContent = '';
+  try{
+    const state = readState();
+    render(buildPlan(state));
+    localStorage.setItem(KEY, JSON.stringify(readStateRaw()));
+  }catch(e){ $('#err').textContent = String(e); $('#out').hidden = true; }
+}
+$('#calc').addEventListener('click', go);
+$('#print').addEventListener('click', ()=>window.print());
+$('#ics').addEventListener('click', ()=>{
+  if(!window.__plan) return go();
+  const blob = new Blob([icsFor(window.__plan)],{type:'text/calendar'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'shift-reset-alarms.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+});
+document.querySelectorAll('#start,#end,#breaks,#lights,#caff,#napok').forEach(el=>{
+  el.addEventListener('change', ()=>{ if(!$('#out').hidden) go(); });
+});
+try{ const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+  if(saved){ $('#start').value = saved.start ?? '19:00'; $('#end').value = saved.end ?? '07:00';
+    ['breaks','lights','caff'].forEach(k=>{ if(saved[k]) $('#'+k).value = saved[k]; });
+    if(typeof saved.napok === 'boolean') $('#napok').checked = saved.napok;
+    go(); }
+}catch(e){ /* storage blocked → start from defaults */ }
+</script>
+<noscript><div class="wrap"><p class="tiny">This planner is a single HTML file with no dependencies and no tracking. It needs JavaScript to compute times. The printed rules from the book work without it.</p></div></noscript>
+</body>
+</html>

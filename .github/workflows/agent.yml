@@ -160,6 +160,23 @@ jobs:
           fi
           python3 -m wealforge run $FLAGS
 
+      - name: Site build — docs/ matches its sources, every link resolves
+        run: |
+          # ./wf site is the only thing that turns the markdown into a deployable folder, so the
+          # generated docs/ tree is committed and diffed here: a rebuild must be byte-identical.
+          # If it is not, either someone edited docs/ by hand or a page changed and nobody
+          # rebuilt — both mean the published site would differ from the source of truth.
+          python3 -m wealforge site --out /tmp/sitecheck --check
+          python3 -m wealforge site --report 00-strategy/decisions/site-latest.md
+          if ! git diff --exit-code --quiet -- docs; then
+            echo "::error::docs/ is stale or hand-edited — run \`./wf site\` and commit the result"
+            git --no-pager diff --stat -- docs
+            exit 1
+          fi
+          grep -rIl 'href="/[a-z0-9-]*/"' docs | grep . && {
+            echo "::error::an absolute link reached docs/ — it breaks under a GitHub Pages subpath"
+            exit 1; } || true
+
       - name: Failing gate opens an issue, once
         if: failure()
         uses: actions/github-script@v7
@@ -209,6 +226,7 @@ jobs:
         run: |
           git config user.name  "wealthforge-agent"
           git config user.email "action@github.com"
+          git add docs
           git add 00-strategy/decisions 2>/dev/null || git add -f 00-strategy/decisions
-          git diff --cached --quiet || git commit -m "agent loop: scorecard, model pick, corpus, eval $(date -u +%F)"
+          git diff --cached --quiet || git commit -m "agent loop: scorecard, model pick, corpus, eval, site $(date -u +%F)"
           git push || true

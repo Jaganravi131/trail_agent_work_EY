@@ -10,3 +10,6 @@ dataset/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Local preview/server logs: never a deliverable, and easy to commit by accident.
+*.log

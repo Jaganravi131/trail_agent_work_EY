@@ -200,6 +200,44 @@ class TestGate(unittest.TestCase):
         self.assertEqual([], [f.rule_id for f in rep.findings],
                          "this is the accepted cost of the anchored-denial rule")
 
+    def test_a_refusal_list_is_read_as_a_refusal(self):
+        # Compliance copy is written as "Not allowed anywhere:" followed by bullets that quote the
+        # forbidden wording. Each bullet is the rule, not the breach — flagging them would mark the
+        # document that states the gate's own purpose as non-compliant, and that is how a checker
+        # ends up switched off. This shape is copied from 07-risks/01-integrity-and-compliance.md.
+        refusal = ("## Health claims\n\nNot allowed anywhere:\n"
+                   "- Any claim to **treat, cure or prevent** a disease (including \"fixes insomnia\", "
+                   "\"prevents diabetes\").\n"
+                   "- Supplement dosing as a recommendation. The book mentions melatonin only as "
+                   "\"ask your clinician about timing\".\n")
+        rep = gate.evaluate_text(refusal, "07-risks/integrity.md")
+        self.assertEqual([], [f.rule_id for f in rep.findings],
+                         f"a refusal list must not report its own rules: {rep.errors}")
+
+    def test_the_guard_needs_a_denial_and_a_list_header(self):
+        # Same bullet, no lead-in: still a violation. Widening the guard to \"any line inside a list\"
+        # would silence the whole document, which nobody wants and everybody would accept after one
+        # annoying warning — so the header has to carry both the denial and the colon.
+        loose = "## Health claims\n\n- This cream cures insomnia and prevents diabetes.\n"
+        rep = gate.evaluate_text(loose, "x/blog.md")
+        self.assertIn("M1", {f.rule_id for f in rep.errors})
+        # A lead-in that is not a denial governs nothing.
+        permitted = ("## Health claims\n\nWe also publish:\n"
+                     "- This cream cures insomnia and prevents diabetes.\n")
+        rep2 = gate.evaluate_text(permitted, "y/blog.md")
+        self.assertIn("M1", {f.rule_id for f in rep2.errors})
+
+    def test_a_violation_smuggled_under_a_refusal_header_is_a_known_gap(self):
+        # The cost of the rule above, asserted rather than discovered later: anything inside a
+        # denial-led list is read as being *described*. A page that hides a live claim in a
+        # \"not allowed\" list beats this check. What makes it survivable is that the same list is
+        # where a human looks, and the report counts what was let through (see the audit trail
+        # section of the markdown report) instead of dropping it silently.
+        smuggled = ("## Health claims\n\nNot allowed anywhere:\n"
+                    "- This cream cures insomnia and prevents diabetes.\n")
+        rep = gate.evaluate_text(smuggled, "z/blog.md")
+        self.assertEqual([], [f.rule_id for f in rep.findings])
+
     def test_disclaimed_credentials_pass_but_fabricated_ones_fail(self):
         bad = "About the Author: Jane Doe is a board-certified sleep specialist and registered nurse (RN)."
         self.assertIn("H1b", {f.rule_id for f in gate.evaluate_text(bad, "x/bio.md", audience="reader").findings})
