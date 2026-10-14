@@ -232,6 +232,7 @@ class Page:
     title: str
     description: str
     last_reviewed: str = ""
+    published: str = ""            # optional; never guessed — see _jsonld
     kind: str = "article"          # article | page | index | tool
     internal_links: list[str] = field(default_factory=list)
     html: str = ""
@@ -251,6 +252,7 @@ class SiteResult:
     warnings: list[str] = field(default_factory=list)
     config: dict[str, Any] = field(default_factory=dict)
     affiliate_pages: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     photos_needed: list[str] = field(default_factory=list)
     photos_used: list[str] = field(default_factory=list)
 
@@ -300,6 +302,7 @@ def _read_pages(root: Path, links: LinkSink, aff: tuple[str, ...],
             pages.append(Page(slug=slug, src=src, title=str(meta["title"]),
                               description=str(meta["description"]),
                               last_reviewed=str(meta.get("last_reviewed", "")),
+                              published=str(meta.get("published", "")),
                               kind="page" if "pages" in str(src) else "article",
                               internal_links=[str(x).strip("/") + "/" for x in meta.get("internal_links", [])],
                               html=rendered, headings=heads, words=words))
@@ -338,10 +341,7 @@ PAGE = """<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title>
 <meta name="description" content="{desc}">
-<meta property="og:type" content="article">
-<meta property="og:title" content="{title}">
-<meta property="og:description" content="{desc}">
-{canonical}<link rel="stylesheet" href="../styles.css">
+{meta}{jsonld}{canonical}<link rel="stylesheet" href="../styles.css">
 <!-- built by `wf site` from 04-seo/. No analytics, no cookies, no external requests. -->
 </head><body><div class="wrap">
 <nav class="top"><a href="../">Home</a> · <a href="../planner/">Free planner</a> · <a href="../book/">The book</a>
@@ -357,7 +357,7 @@ INDEX = """<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title>
 <meta name="description" content="{desc}">
-{canonical}<link rel="stylesheet" href="styles.css">
+{meta}{jsonld}{canonical}<link rel="stylesheet" href="styles.css">
 <!-- built by `wf site` from 04-seo/. No analytics, no cookies, no external requests. -->
 </head><body><div class="wrap">
 <h1>{h1}</h1>
@@ -426,6 +426,107 @@ def _canonical(base_url: str, slug: str) -> str:
     return f'<link rel="canonical" href="{base_url.rstrip("/")}/{slug}">\n'
 
 
+def _iso(value: str) -> str:
+    v = str(value or "").strip()
+    return v if re.fullmatch(r"\d{4}-\d{2}-\d{2}", v) else ""
+
+
+def _brand_meta(cfg: dict[str, Any], base_url: str, page: "Page", *, up: str = "../",
+                have_og: bool = False, feed: bool = False, icon: bool = True) -> str:
+    """Open Graph, Twitter card and favicon for one page.
+
+    Absolute URLs only where the spec demands them: `og:url` and `og:image` are useless as
+    relative paths, so they appear once `base_url` exists, and `og:image` additionally needs the
+    exported PNG — a social card pointing at a file that does not exist looks worse in a LinkedIn
+    preview than no image tag at all.
+    """
+    esc = lambda v: html.escape(str(v), quote=True)
+    loc = base_url.rstrip("/")
+    out = ([f'<link rel="icon" href="{up}favicon.svg" type="image/svg+xml">'] if icon else []) + [
+           '<meta name="theme-color" content="#0b1220">',
+           f'<meta property="og:site_name" content="{esc(cfg.get("site_name", "Shift Reset"))}">',
+           f'<meta property="og:type" content="{"website" if page.kind in ("index", "tool") else "article"}">',
+           f'<meta property="og:title" content="{esc(page.title)}">',
+           f'<meta property="og:description" content="{esc(page.description)}">']
+    if loc:
+        out.append(f'<meta property="og:url" content="{loc}/{page.slug}">')
+        out.append(f'<meta name="twitter:card" content="{"summary_large_image" if have_og else "summary"}">')
+        if have_og:
+            out.append(f'<meta property="og:image" content="{loc}/og-card.png">')
+            out.append(f'<meta name="twitter:image" content="{loc}/og-card.png">')
+        if feed:
+            out.append(f'<link rel="alternate" type="application/rss+xml" '
+                       f'title="{esc(cfg.get("site_name", "Shift Reset"))}" href="{loc}/feed.xml">')
+    else:
+        out.append('<meta name="twitter:card" content="summary">')
+    return "\n".join(out) + "\n"
+
+
+def _jsonld(cfg: dict[str, Any], base_url: str, page: "Page", slugs: set[str]) -> str:
+    """Structured data, and nothing in it that the page cannot support.
+
+    Deliberately absent: `datePublished` unless the front matter states it (back-dating a guess is
+    a lie with a timestamp), `aggregateRating` (no reviews exist), a `SearchAction` (there is no
+    search to point at), and any author credentials — the pen name carries no qualification, in the
+    schema as anywhere else, because that is the exact fabrication this project refuses.
+    """
+    esc = lambda v: json.dumps(str(v), ensure_ascii=False)
+    loc = base_url.rstrip("/")
+    node: dict[str, Any] = {"@context": "https://schema.org"}
+    url = f"{loc}/{page.slug}" if loc else ""
+    if page.kind == "index":
+        node["@type"] = "WebSite"
+        node["name"] = str(cfg.get("site_name", "Shift Reset"))
+        node["description"] = str(cfg.get("site_description", ""))
+    elif page.kind == "tool":
+        node["@type"] = "WebApplication"
+        node["name"] = page.title
+        node["description"] = page.description
+        node["applicationCategory"] = "UtilitiesApplication"
+        node["isAccessibleForFree"] = True
+        node["featureList"] = ["anchor nap and wake windows", "caffeine dose and curfew math",
+                              "meal and light timing", "printable fridge card", ".ics export"]
+    elif page.kind == "article":
+        node["@type"] = "Article"
+        node["headline"] = page.title
+        node["description"] = page.description
+        node["inLanguage"] = str(cfg.get("language", "en"))
+        node["isAccessibleForFree"] = True
+        node["author"] = {"@type": "Person", "name": str(cfg.get("author", "J. Arek Thorne"))}
+        node["publisher"] = {"@type": "Organization", "name": str(cfg.get("site_name", "Shift Reset"))}
+        pub = _iso(page.published)
+        if pub:
+            node["datePublished"] = pub
+        rev = _iso(page.last_reviewed)
+        if rev:
+            node["dateModified"] = rev
+        if url:
+            node["mainEntityOfPage"] = {"@type": "WebPage", "@id": url}
+    else:
+        node["@type"] = "WebPage"
+        node["name"] = page.title
+        node["description"] = page.description
+        rev = _iso(page.last_reviewed)
+        if rev:
+            node["lastReviewed"] = rev
+    if url:
+        node["url"] = url
+    parts = [node]
+    if url and page.slug:
+        parts.append({"@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Home", "item": f"{loc}/"},
+            {"@type": "ListItem", "position": 2, "name": page.title, "item": url}]})
+    if len(parts) == 1:
+        graph = parts[0]
+    else:
+        # Nested nodes inherit @context from the envelope; repeating it inside each one is how
+        # generators ship a graph that validates and still reads as noise.
+        for node in parts:
+            node.pop("@context", None)
+        graph = {"@context": "https://schema.org", "@graph": parts}
+    return f'<script type="application/ld+json">{json.dumps(graph, ensure_ascii=False)}</script>\n'
+
+
 def _footer(cfg: dict[str, Any]) -> str:
     author = cfg.get("author", "J. Arek Thorne")
     # A contact route is not decoration: an affiliate account and a store listing both expect a
@@ -436,6 +537,9 @@ def _footer(cfg: dict[str, Any]) -> str:
     return (f"Educational content, not medical advice — see the <a href=\"../editorial-policy/\">"
             f"editorial policy</a> for sourcing, disclosure and how corrections are logged. "
             f"Written by {author} (a pen name; no clinical credentials are claimed).{reach}")
+
+
+HOME_REVIEWED = ""     # the home page is a generated index, so it carries no review date of its own
 
 
 def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path | None = None,
@@ -449,7 +553,13 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
     base_url = str(cfg.get("base_url", "")).strip()
     res = SiteResult(config={k: v for k, v in cfg.items() if not k.startswith("_")})
     links = LinkSink()
+    undated: list[str] = []      # articles with no `published:` — reported once, not per page
 
+    # A social card is the only place where a *raster* is required: scrapers do not read SVG.
+    # The repo ships the vector original (04-seo/images/og-card.svg); og-card.png is the operator's
+    # 2-minute export, and until it exists the tag is omitted instead of pointing at nothing.
+    img_root = root / "04-seo" / "images"
+    have_og = (img_root / "og-card.png").exists()
     pages = _read_pages(root, links, aff, res.errors)
     tool_src = root / TOOL_DIR / "index.html"
     if tool_src.exists():
@@ -490,6 +600,17 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
             tool_html = re.sub(r'<link rel="canonical" href="[^"]+">',
                                f'<link rel="canonical" href="{base_url.rstrip("/")}/planner/">',
                                tool_html, count=1)
+        # The planner is the most shared page on the site, and it is copied verbatim rather than
+        # wrapped in the article shell — so its social metadata and its schema are injected here.
+        # Without this, the WebApplication node below would be code that looks like a feature.
+        tool_page = Page(slug="planner/", src=tool_src, title="Shift Reset Planner — free night shift "
+                         "sleep, caffeine and meal timing calculator",
+                         description="Enter a shift start and get the anchor nap, meal timing, caffeine "
+                                     "curfew and light plan. Free, no sign-up, nothing uploaded.",
+                         kind="tool")
+        head_block = _brand_meta(cfg, base_url, tool_page, have_og=have_og, feed=True,
+                                 icon=False) + _jsonld(cfg, base_url, tool_page, slugs)
+        tool_html = tool_html.replace("</head>", head_block + "</head>", 1)
         if "../styles.css" not in tool_html:
             tool_html = tool_html.replace("</head>", '  <!-- served alongside the site styles -->\n</head>', 1)
         for tp in pages:
@@ -512,6 +633,12 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
         if has_aff and "affiliate" not in p.html.lower():
             res.errors.append(f"{p.src}: contains an affiliate link; the generated disclosure is in "
                               "place, but the page text should say it in the author's own words too")
+        if not _iso(p.last_reviewed):
+            res.errors.append(f"{p.src}: no valid `last_reviewed: YYYY-MM-DD`. The visible review line "
+                              "and the schema's dateModified are the same promise, and a page dated by "
+                              "guess is worse than an undated one — put the date you actually reviewed it")
+        if p.kind == "article" and not _iso(p.published):
+            undated.append(p.slug)
         rel = [x for x in p.internal_links if x not in slugs]
         res.errors += [f"{p.src}: internal_links target /{x} has no page" for x in rel]
         related = ""
@@ -520,6 +647,9 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
             items = "".join(f'<li><a href="../{x}">{x.strip("/").replace("-", " ")}</a></li>' for x in good)
             related = f'<p class="meta" style="margin-top:2rem">More in this cluster:</p><ul>{items}</ul>'
         p.html = PAGE.format(title=html.escape(p.title), desc=html.escape(p.description),
+                             meta=_brand_meta(cfg, base_url, p, up="../", have_og=have_og,
+                                              feed=bool(base_url)),
+                             jsonld=_jsonld(cfg, base_url, p, slugs),
                              canonical=_canonical(base_url, p.slug), affline=affline,
                              body=p.html, related=related, footer=_footer(cfg))
         if p.last_reviewed:
@@ -545,6 +675,11 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
         h1=html.escape(str(cfg.get("home_h1", "Sleep, food and light for people who work overnights"))),
         desc=html.escape(str(cfg.get("site_description", "Original, practical guidance for people who work "
                                                           "overnights. Free planner, five long guides, one book."))),
+        meta=_brand_meta(cfg, base_url, Page(slug="", src=root, title=str(cfg.get("site_name", "Shift Reset")),
+                                             description=str(cfg.get("site_description", "")), kind="index",
+                                             last_reviewed=HOME_REVIEWED), up="", have_og=have_og, feed=True),
+        jsonld=_jsonld(cfg, base_url, Page(slug="", src=root, title=str(cfg.get("site_name", "Shift Reset")),
+                                           description=str(cfg.get("site_description", "")), kind="index"), slugs),
         canonical=_canonical(base_url, ""), lede=html.escape(str(cfg.get("lede", ""))) or
         "Written by someone who has done the shifts, not by a clinic. Start with the free planner.",
         cards=cards, extra=extra,
@@ -569,6 +704,11 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
         if PLACEHOLDER_RX.search(p.html or ""):
             res.errors.append(f"{p.src}: placeholder text reached the built page "
                               f"({PLACEHOLDER_RX.search(p.html).group(0)!r})")
+    if undated:
+        res.warnings.append(f"{len(undated)} article(s) have no `published:` date, so datePublished is "
+                            "omitted from their schema and the feed uses the review date: "
+                            f"{', '.join(sorted(undated)[:5])}. Add the real date at publish time — do "
+                            "not back-date it from the file's git history")
     if not cfg.get("_config_path_exists"):
         res.warnings.append("config/site.json missing — defaults used (no base_url, so no canonicals)")
     elif not base_url:
@@ -658,6 +798,8 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
         page404 = PAGE.format(
             title=f"Page not found — {cfg.get('site_name', 'Shift Reset')}",
             desc="That address is not part of this site.", canonical="", affline="",
+            meta=f'<link rel="icon" href="favicon.svg" type="image/svg+xml">\n'
+                 '<meta name="theme-color" content="#0b1220">\n', jsonld="",
             body="<h1>No page here</h1><p class=\"meta\">Either a link was mistyped or this site "
                  "renamed something. Everything that exists is listed below — or start at the "
                  "<a href=\"./\">home page</a>.</p>"
@@ -667,8 +809,64 @@ def build(root: Path, out_dir: str | Path = DEFAULT_OUT, config_path: str | Path
         # file has to drop the "../" prefix or its stylesheet and links point above the site.
         (out / "404.html").write_text(page404.replace('="../', '="')
                                       .replace('href=""', 'href="./"'), encoding="utf-8")
+        # favicon + the vector original of the social card: copied because they are assets the site
+        # links to, not prose, and the export step is easier when the source file is right there.
+        for asset in ("favicon.svg", "og-card.svg", "og-card.png"):
+            src = img_root / asset
+            if src.exists():
+                (out / asset).write_bytes(src.read_bytes())
+                res.written.append(Path(asset))
+        if not (img_root / "favicon.svg").exists():
+            res.warnings.append("no 04-seo/images/favicon.svg — browsers will request /favicon.ico and "
+                                "get a 404 (harmless, avoidable)")
+        if have_og:
+            res.written.append(Path("og-card.png"))
+        elif base_url:
+            res.warnings.append("og:image not emitted: export 04-seo/images/og-card.svg to og-card.png "
+                                "(1200×630, any free exporter) and rebuild — until then social posts "
+                                "show the title and description without a card")
+        if base_url:
+            items = []
+            # Newest first; the slug is the tie-breaker so a rebuild of the same sources produces the
+            # same bytes, which is what makes CI's docs/ diff worth having.
+            for p_ in sorted((x for x in prose if _iso(x.last_reviewed)),
+                             key=lambda q: (_iso(q.published) or _iso(q.last_reviewed), q.slug),
+                             reverse=True)[:10]:
+                date = _iso(p_.published) or _iso(p_.last_reviewed)
+                try:
+                    from datetime import datetime as _dt
+                    rd = _dt.strptime(date, "%Y-%m-%d").strftime("%a, %d %b %Y 09:00:00 +0000")
+                except ValueError:
+                    continue
+                link = f"{base_url.rstrip('/')}/{p_.slug}"
+                items.append(
+                    "<item>"
+                    f"<title>{html.escape(p_.title)}</title>"
+                    f"<link>{link}</link>"
+                    f'<guid isPermaLink="true">{link}</guid>'
+                    f"<pubDate>{rd}</pubDate>"
+                    f"<description>{html.escape(p_.description)}</description>"
+                    "</item>")
+            feed = ['<?xml version="1.0" encoding="UTF-8"?>',
+                    '<rss version="2.0"><channel>',
+                    f"<title>{html.escape(str(cfg.get('site_name', 'Shift Reset')))}</title>",
+                    f"<link>{base_url.rstrip('/')}/</link>",
+                    f"<description>{html.escape(str(cfg.get('site_description', '')))}</description>",
+                    f"<language>{html.escape(str(cfg.get('language', 'en')))}</language>"]
+            if items:
+                feed.append(f"<lastBuildDate>{items[0].split('<pubDate>')[1].split('</pubDate>')[0]}"
+                            "</lastBuildDate>")
+            feed += items + ["</channel></rss>"]
+            (out / "feed.xml").write_text("\n".join(feed) + "\n", encoding="utf-8")
+            res.written.append(Path("feed.xml"))
         (out / ".nojekyll").write_text("", encoding="utf-8")
         res.written += [Path("robots.txt"), Path("netlify.toml"), Path(".nojekyll"), Path("404.html")]
+    # What is switched on, in one line of the report. The host-level facts (canonicals, sitemap,
+    # feed, absolute og:url) all hinge on one config value, so an operator deciding "am I ready to
+    # submit this to Search Console?" should not have to infer it from five prose warnings.
+    res.metadata = {"base_url": bool(base_url), "sitemap": bool(base_url),
+                    "feed": bool(base_url), "og_image": have_og, "favicons": (img_root / "favicon.svg").exists(),
+                    "pages_missing_published_date": len(undated)}
     res.pages = pages
     return res
 
@@ -687,6 +885,14 @@ def report_markdown(res: SiteResult, out_dir: str = DEFAULT_OUT) -> str:
     if res.photos_needed:
         L += ["", "**Photos still to supply** (rendered as labelled placeholders, not broken icons):"]
         L += [f"- `{x}`" for x in sorted(set(res.photos_needed))]
+    if res.metadata:
+        m = res.metadata
+        state = lambda b: "on" if b else "off"
+        L += ["", f"**Metadata:** schema and Open Graph on every page · canonical/sitemap/feed "
+                  f"{state(m.get('base_url'))} (needs `base_url`) · social card image "
+                  f"{state(m.get('og_image'))} (needs `04-seo/images/og-card.png`) · favicon "
+                  f"{state(m.get('favicons'))} · {m.get('pages_missing_published_date', 0)} page(s) "
+                  f"without a `published:` date"]
     if res.errors:
         L += ["", "## Errors", ""] + [f"- {e}" for e in res.errors]
     if res.warnings:

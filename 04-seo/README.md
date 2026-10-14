@@ -10,7 +10,7 @@ build except by editing it. `./wf site` turns these markdown files plus `../03-t
 | `02-DEPLOY.md` | How to get `docs/` live in ~20 minutes for $0, the checks to run afterwards, and where the domain is configured |
 | `articles/` | The pillar articles (seven so far). Reader-facing, long, cited, and gate-scanned |
 | `pages/` | Home-adjacent pages that aren't articles: `/about/`, `/editorial-policy/`, `/book/`, and the two commercial how-tos |
-| `images/` | Does not exist yet, deliberately. Photo references point here; until a file lands, the build renders a labelled "photo to supply" box instead of a broken icon |
+| `images/` | Two kinds of asset. **Original work, already shipped:** `favicon.svg` and `og-card.svg` (the social card, navy/amber per the cover brief — export it to `og-card.png` and the `og:image` tag turns itself on). **Yours to photograph:** every `images/*.jpg` a page references; until a file lands the build renders a labelled "photo to supply" box instead of a broken icon |
 
 ## The format a page has to follow
 
@@ -23,9 +23,14 @@ than a strict schema that gets worked around:
 ---
 title: "Question-shaped title, the way a person types it"
 slug: /page-slug/                      # becomes docs/page-slug/index.html
-description: "140–160 chars. The search-result line."
+description: "140–160 chars. The search-result line, the card line, the feed line."
 internal_links: ["/other-page/", "/planner/"]   # nav order; every entry must exist
-last_reviewed: 2026-10-14              # printed on the page. Bump it only after a real review
+last_reviewed: 2026-10-14              # REQUIRED: printed on the page *and* emitted as schema
+                                       # dateModified. Bump it only after a real review; the build
+                                       # fails a page with no valid date rather than dating a guess
+published: 2026-10-20                  # optional; set it when the page actually goes live. Nothing
+                                       # is back-dated from git history — the feed uses last_reviewed
+                                       # until you do, and says so in the build report
 ---
 ```
 

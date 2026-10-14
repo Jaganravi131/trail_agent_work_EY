@@ -1,6 +1,7 @@
 {
   "site_name": "Shift Reset",
   "site_description": "Sleep, food and light for people who work overnights. A free planner, seven long guides, one book — written by someone who has done the shifts.",
+  "language": "en-gb",
   "home_h1": "Sleep, food and light for people who work overnights",
   "lede": "Enter your shift times, get the schedule. Everything here is original, cited and free to read; the planner needs no sign-up and uploads nothing.",
   "author": "J. Arek Thorne",
@@ -18,6 +19,7 @@
     "affiliate_hosts": "Any link whose host matches one of these gets rel=\"sponsored nofollow\" and a disclosure banner at the top of the page. FTC requires the disclosure; the builder makes it impossible to forget.",
     "no_build_step": "GitHub Pages and Netlify Drop both serve the generated docs/ folder as-is, which is why there is no bundler here.",
     "contact": "How readers reach you — an address, a form URL, anything real. The footer prints it only when it is non-empty; leaving it empty is honest, inventing an inbox is not. Fill this before applying to any affiliate programme.",
-    "home_h1": "The homepage headline, separate from the <title> on purpose: the title tag carries the site name for search results, the headline has to say what the site is for a human who just arrived."
+    "home_h1": "The homepage headline, separate from the <title> on purpose: the title tag carries the site name for search results, the headline has to say what the site is for a human who just arrived.",
+    "language": "The copy is British English (lorry, hoover, colour, \"your\"), and it goes into the schema's inLanguage. Change it if you localise the pages; do not leave it claiming a variety the text doesn't use."
   }
 }

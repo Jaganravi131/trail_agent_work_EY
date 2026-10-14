@@ -256,6 +256,167 @@ Not medical advice.
         self.assertTrue(any("not built" in e and "slug" in e for e in res.errors), res.errors)
 
 
+class HeadMetadata(unittest.TestCase):
+    """OG/Twitter cards, JSON-LD, the feed and the brand assets.
+
+    These matter because of how the site gets its first readers: every post in
+    `05-marketing/01-CONTENT-CALENDAR.md` shares a link, and a shared link with no title, no
+    description and a broken image is how good writing gets skipped.
+    """
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp(prefix="wf-site-meta-"))
+        _write(self.root, "04-seo/articles/01-alpha.md", ART_A)
+        _write(self.root, "04-seo/articles/02-beta.md", ART_B)
+        _write(self.root, "config/site.json", json.dumps({"site_name": "Test", "base_url": "",
+                                                           "author": "A. N. Other", "language": "en-gb"}))
+        self.out = self.root / "docs"
+        site.build(self.root, out_dir=self.out)
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def _ld(self, rel):
+        page = (self.out / rel).read_text()
+        m = re.search(r'<script type="application/ld\+json">(.*?)</script>', page, re.S)
+        self.assertTrue(m, f"no structured data on {rel}")
+        return json.loads(m.group(1)), page
+
+    def test_every_built_page_carries_the_card_tags(self):
+        for rel in ("alpha/index.html", "beta/index.html", "index.html"):
+            head = (self.out / rel).read_text().split("</head>")[0]
+            for tag in ("og:site_name", "og:title", "og:description", "twitter:card"):
+                self.assertIn(tag, head, f"{rel} missing {tag}")
+
+    def test_relative_pages_and_root_page_point_at_the_same_favicon(self):
+        # The site is one folder deep for content and one level shallower for the home page; a
+        # hardcoded href would 404 the icon on half the site.
+        self.assertIn('href="../favicon.svg"', (self.out / "alpha" / "index.html").read_text())
+
+    def test_no_absolute_url_tags_without_a_domain(self):
+        head = (self.out / "alpha" / "index.html").read_text()
+        self.assertNotIn("og:url", head)
+        self.assertNotIn("og:image", head)
+        self.assertFalse((self.out / "feed.xml").exists())
+
+    def test_schema_is_valid_json_and_dates_from_the_review_line(self):
+        d, _ = self._ld("alpha/index.html")
+        self.assertEqual(d["@type"], "Article")
+        self.assertEqual(d["dateModified"], "2026-10-14")
+        self.assertEqual(d["inLanguage"], "en-gb")
+        self.assertTrue(d["isAccessibleForFree"])
+        # `published:` is not in the fixture, so the field must be absent rather than guessed.
+        self.assertNotIn("datePublished", d)
+
+    def test_the_author_node_claims_nothing_beyond_a_name(self):
+        d, _ = self._ld("alpha/index.html")
+        self.assertEqual(sorted(d["author"].keys()), ["@type", "name"])
+        self.assertEqual(d["author"]["name"], "A. N. Other")
+
+    def test_a_graph_is_a_graph_and_not_a_duplicated_node(self):
+        # A graph only forms once there are absolute URLs to relate, so this one builds with a domain.
+        _write(self.root, "config/site.json", json.dumps(
+            {"site_name": "Test", "base_url": "https://example.org/site", "author": "A. N. Other"}))
+        site.build(self.root, out_dir=self.out)
+        d, _ = self._ld("alpha/index.html")
+        # The envelope holds only the context and the list. Some generators paste the first node at
+        # the top level *and* inside the graph, which validators accept and parsers trip on.
+        self.assertEqual(sorted(d.keys()), ["@context", "@graph"])
+        self.assertEqual([n["@type"] for n in d["@graph"]], ["Article", "BreadcrumbList"])
+        self.assertNotIn("@context", d["@graph"][0], "inner nodes inherit the envelope's @context")
+        # And with no domain there is nothing to breadcrumb *to*: the node stands alone, and a
+        # half-empty graph is not shipped in its place.
+        _write(self.root, "config/site.json", json.dumps({"site_name": "Test", "base_url": ""}))
+        site.build(self.root, out_dir=self.out)
+        d2, _ = self._ld("alpha/index.html")
+        self.assertEqual(d2["@type"], "Article")
+        self.assertNotIn("@graph", d2)
+
+    def test_feed_autodiscovery_is_on_every_page_once_a_domain_exists(self):
+        _write(self.root, "config/site.json", json.dumps(
+            {"site_name": "Test", "base_url": "https://example.org/site"}))
+        site.build(self.root, out_dir=self.out)
+        for rel in ("alpha/index.html", "beta/index.html", "index.html"):
+            self.assertIn('rel="alternate" type="application/rss+xml"',
+                          (self.out / rel).read_text(), rel)
+
+    def test_no_ratings_no_search_and_no_fake_stats_in_the_schema(self):
+        blob = " ".join((self.out / r / "index.html").read_text() for r in ("alpha", "beta"))
+        for forbidden in ("aggregateRating", "SearchAction", "usersCount", "interactionCount",
+                          "speakable", "medicalSpecialty"):
+            self.assertNotIn(forbidden, blob, f"{forbidden} would be a claim the site cannot support")
+
+    def test_a_page_without_a_review_date_does_not_build(self):
+        root2 = Path(tempfile.mkdtemp(prefix="wf-site-undated-"))
+        try:
+            _write(root2, "04-seo/articles/01-alpha.md", ART_A.replace("last_reviewed: 2026-10-14\n", ""))
+            _write(root2, "04-seo/articles/02-beta.md", ART_B)
+            res = site.build(root2, out_dir=root2 / "docs", check=True)
+            self.assertFalse(res.ok)
+            self.assertTrue(any("last_reviewed" in e for e in res.errors), res.errors)
+        finally:
+            shutil.rmtree(root2, ignore_errors=True)
+
+    def test_a_garbage_review_date_is_rejected_too(self):
+        root2 = Path(tempfile.mkdtemp(prefix="wf-site-baddate-"))
+        try:
+            _write(root2, "04-seo/articles/01-alpha.md", ART_A.replace("2026-10-14", "last week"))
+            _write(root2, "04-seo/articles/02-beta.md", ART_B)
+            res = site.build(root2, out_dir=root2 / "docs", check=True)
+            self.assertTrue(any("last_reviewed" in e for e in res.errors), res.errors)
+        finally:
+            shutil.rmtree(root2, ignore_errors=True)
+
+    def test_base_url_turns_on_urls_and_the_feed(self):
+        _write(self.root, "config/site.json", json.dumps(
+            {"site_name": "Test", "base_url": "https://example.org/site", "author": "A. N. Other"}))
+        site.build(self.root, out_dir=self.out)
+        head = (self.out / "alpha" / "index.html").read_text()
+        self.assertIn('<meta property="og:url" content="https://example.org/site/alpha/">', head)
+        self.assertIn('rel="alternate" type="application/rss+xml"', head)
+        feed = (self.out / "feed.xml").read_text()
+        self.assertIn("<title>Test</title>", feed)
+        self.assertIn("https://example.org/site/alpha/", feed)
+        self.assertIn("14 Oct 2026", feed)      # RFC-822 form of the review date, not a guess
+        self.assertRegex(feed, r"<pubDate>[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} 09:00:00 \+0000</pubDate>")
+
+    def test_og_image_appears_only_when_the_png_exists(self):
+        _write(self.root, "config/site.json", json.dumps(
+            {"site_name": "Test", "base_url": "https://example.org/site"}))
+        site.build(self.root, out_dir=self.out)
+        self.assertNotIn("og:image", (self.out / "alpha" / "index.html").read_text())
+        self.assertEqual("summary", re.search(r'twitter:card" content="(\w+)"',
+                                              (self.out / "alpha" / "index.html").read_text()).group(1))
+        (self.root / "04-seo" / "images").mkdir(parents=True, exist_ok=True)
+        _write(self.root, "04-seo/images/og-card.png", "png-bytes")
+        site.build(self.root, out_dir=self.out)
+        head = (self.out / "alpha" / "index.html").read_text()
+        self.assertIn('<meta property="og:image" content="https://example.org/site/og-card.png">', head)
+        self.assertIn('summary_large_image', head)
+        self.assertTrue((self.out / "og-card.png").exists())
+
+    def test_brand_assets_are_carried_into_the_site(self):
+        (self.root / "04-seo" / "images").mkdir(parents=True, exist_ok=True)
+        _write(self.root, "04-seo/images/favicon.svg", "<svg/>")
+        _write(self.root, "04-seo/images/og-card.svg", "<svg/>")
+        site.build(self.root, out_dir=self.out)
+        self.assertEqual((self.out / "favicon.svg").read_text(), "<svg/>")
+        self.assertTrue((self.out / "og-card.svg").exists())
+
+    def test_the_tool_page_gets_its_own_schema_and_one_icon(self):
+        # The planner is copied verbatim, so its metadata has to be injected — and its inline icon
+        # link must not be doubled.
+        _write(self.root, "03-tool/index.html", '<!doctype html><html><head><title>Planner</title>\n'
+                 '<link rel="icon" href="data:image/svg+xml,<svg/>"></head><body><p>tool</p></body></html>\n')
+        res = site.build(self.root, out_dir=self.out)
+        page = (self.out / "planner" / "index.html").read_text()
+        self.assertEqual(len(re.findall(r'<link rel="icon"', page)), 1)
+        self.assertIn("og:site_name", page)
+        d = json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>', page, re.S).group(1))
+        self.assertEqual(d["@type"], "WebApplication")
+        self.assertTrue(d["isAccessibleForFree"])
+
+
 class RepoSite(unittest.TestCase):
     """The promise, applied to the repo itself."""
 
@@ -294,6 +455,29 @@ class RepoSite(unittest.TestCase):
         # `03-tool/index.html` used to hard-code a canonical on a domain nobody owns.
         self.assertNotIn("shiftreset.tools", "".join(
             (REPO / rel).read_text() for rel in ("03-tool/index.html",)))
+
+    def test_every_page_of_the_real_site_has_structured_data_and_a_card(self):
+        # Rebuild into a temp folder and read the actual output: this is the artefact a host serves.
+        tmp = Path(tempfile.mkdtemp(prefix="wf-site-meta-repo-"))
+        try:
+            site.build(REPO, out_dir=tmp)
+            n = 0
+            for f in sorted(tmp.rglob("index.html")):
+                head = f.read_text().split("</head>")[0]
+                self.assertIn("og:title", head, f"{f.relative_to(tmp)} has no social title")
+                self.assertIn("application/ld+json", head, f"{f} has no structured data")
+                n += 1
+            self.assertGreaterEqual(n, 13, "every page plus the home page and the planner")
+            self.assertTrue((tmp / "favicon.svg").exists())
+            self.assertFalse((tmp / "feed.xml").exists(), "no base_url yet, so no absolute-URL feed")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_the_report_states_which_host_features_are_switched_on(self):
+        md = site.report_markdown(self.res, "docs")
+        self.assertIn("**Metadata:**", md)
+        self.assertIn("canonical/sitemap/feed off (needs `base_url`)", md)
+        self.assertIn("without a `published:` date", md)
 
     def test_report_markdown_is_readable_and_names_the_numbers(self):
         md = site.report_markdown(self.res, "docs")

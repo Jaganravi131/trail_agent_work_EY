@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Sleep, food and light for people who work overnights — free planner, no sign-up, nothing uploaded">
+  <!-- Social card source. `wf site` copies this into the published folder and points og:image at
+       og-card.png, because Facebook, LinkedIn and Slack will not render an SVG for a preview.
+       Export step for the operator (2 minutes, $0): open this file in a browser and screenshot at
+       1200×630, or run  inkscape -w 1200 -h 630 og-card.svg og-card.png  or  convert og-card.svg
+       og-card.png  — then save it beside this file as og-card.png and run ./wf site. The tag turns
+       itself on when the PNG exists; until then a shared link shows the title and description with
+       no card, which is the honest state and better than a preview of a broken image.
+
+       Typography note: this is set in Helvetica/Arial because they exist everywhere. The cover brief
+       uses Barlow or Archivo (OFL, free) — if you export with those installed, use them here too so
+       the card and the book cover are the same family. Navy/amber palette from 02-kdp/01-COVER-BRIEF.md:
+       no photos, no gradients, no clip-art scene, legible at thumbnail scale. -->
+  <rect width="1200" height="630" fill="#0b1220"/>
+  <rect x="84" y="84" width="72" height="6" fill="#f2a33c"/>
+
+  <text x="84" y="152" fill="#f2a33c" font-family="Barlow, Helvetica, Arial, sans-serif"
+        font-size="27" font-weight="600" letter-spacing="5.4">THE NIGHT SHIFT RESET</text>
+
+  <text x="84" y="252" fill="#e8eefc" font-family="Barlow, Helvetica, Arial, sans-serif"
+        font-size="76" font-weight="700">Sleep, food and light</text>
+  <text x="84" y="336" fill="#e8eefc" font-family="Barlow, Helvetica, Arial, sans-serif"
+        font-size="76" font-weight="700">for people who work</text>
+  <text x="84" y="420" fill="#9fb0cc" font-family="Barlow, Helvetica, Arial, sans-serif"
+        font-size="76" font-weight="700">overnights.</text>
+
+  <text x="84" y="492" fill="#e8eefc" font-family="Helvetica, Arial, sans-serif" font-size="30">Enter your shift times, get the schedule — the nap, the last coffee, the lights-out hour.</text>
+  <text x="84" y="540" fill="#9fb0cc" font-family="Helvetica, Arial, sans-serif" font-size="26">Free browser planner · no sign-up · nothing uploaded · educational only</text>
+
+  <!-- The site mark, same geometry as 04-seo/images/favicon.svg, at card scale. -->
+  <g transform="translate(1052,468)">
+    <circle cx="45" cy="45" r="40" fill="none" stroke="#f2a33c" stroke-width="7"/>
+    <path d="M45 18a27 27 0 1 0 27 27 33 33 0 0 1-27-27z" fill="#f2a33c"/>
+  </g>
+  <text x="84" y="588" fill="#5d7095" font-family="Helvetica, Arial, sans-serif" font-size="22"
+        letter-spacing="2.6">WRITTEN BY SOMEONE WHO HAS DONE THE SHIFTS — NOT A CLINIC</text>
+</svg>

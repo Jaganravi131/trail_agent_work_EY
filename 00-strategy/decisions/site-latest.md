@@ -1,6 +1,6 @@
 # Site build report
 
-**12 prose page(s)** · 19 file(s) written · 0 error(s), 4 warning(s)
+**12 prose page(s)** · 21 file(s) written · 0 error(s), 5 warning(s)
 
 | page | kind | words | internal links |
 |---|---|---|---|
@@ -31,9 +31,12 @@
 - `images/no-microwave-lunch-bag.jpg`
 - `images/pre-shift-nap.jpg`
 
+**Metadata:** schema and Open Graph on every page · canonical/sitemap/feed off (needs `base_url`) · social card image off (needs `04-seo/images/og-card.png`) · favicon on · 9 page(s) without a `published:` date
+
 ## Warnings
 
 - 03-tool/index.html: canonical dropped — set `base_url` in config/site.json once the domain exists
+- 9 article(s) have no `published:` date, so datePublished is omitted from their schema and the feed uses the review date: 4-on-4-off-sleep/, blackout-curtains-eye-mask/, caffeine-on-night-shift/, days-off-reset/, earplugs-day-sleeping/. Add the real date at publish time — do not back-date it from the file's git history
 - base_url is empty — pages build without canonical URLs. Set it when the domain exists; do not invent one before then
 - 10 photo slot(s) rendered as labelled placeholders: images/batch-cook-five-containers.jpg, images/blackout-curtains-daylight-test.jpg, images/breakroom-coffee-3am.jpg, images/bridge-day-calendar.jpg
 - sitemap.xml not written: it needs absolute URLs, and inventing a domain is worse than omitting the file. Set base_url and rebuild

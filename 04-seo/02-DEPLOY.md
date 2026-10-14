@@ -72,6 +72,28 @@ repo root, Netlify reads that file and works with no form fields at all.
 | 5 | View source on an article | `<link rel="canonical">` matches the URL you actually opened, and the "Last reviewed" line is there |
 | 6 | `/robots.txt`, `/sitemap.xml` | Both exist only when `base_url` is set — if sitemap is missing, that's step 0 |
 
+**The social card is one export away.** `04-seo/images/og-card.svg` is the vector original, and it is
+copied into the build so you can find it. Scrapers (Facebook, LinkedIn, Slack, X) will not read an SVG
+for a preview, so export it once at **1200×630** to `04-seo/images/og-card.png` —
+
+```bash
+inkscape -w 1200 -h 630 og-card.svg og-card.png    # or: convert og-card.svg og-card.png
+```
+
+— then run `./wf site`. The `og:image` tag and the large Twitter card appear only when that file
+exists; until then a shared link shows the title and description with no image, which is the honest
+degradation and better than a preview of a broken file.
+
+**Two free checks on the generated metadata** (both belong in the same 5 minutes as the checks above):
+
+| Check | How | What it catches |
+|---|---|---|
+| Structured data | Paste a page URL into [Rich Results Test](https://search.google.com/test/rich-results) | A `dateModified` that has drifted, or a schema the host won't read |
+| The card | Compose the link in a private X or LinkedIn post and look at the preview | A missing `og:image`, a truncated title, a description that reads wrong out of context |
+
+`feed.xml` exists only once `base_url` is set — point an RSS reader at it and confirm the ten newest
+items and their dates look right; it is what makes the site subscribable without anyone asking.
+
 **On the labelled photo boxes:** an `<img>` appears only for a file that exists in `04-seo/images/`.
 Everything else renders as a visible "photo to supply" slot. That is the intended state for a site
 whose author has not taken the photos yet — do not fake it with a stock image, and do not delete the
@@ -92,6 +114,8 @@ slot to make it look finished. Drop the real JPEG in with the same filename, run
   automatic: the builder detects an affiliate host in a page, injects the line at the top, and adds
   `rel="sponsored nofollow"` to the link. `config/site.json` → `affiliate_hosts` is where a new
   network gets added.
+- **The `published:` date** on each article, set to the day it actually went live. The build report
+  counts the pages still missing it and refuses to guess; the schema omits `datePublished` until you do.
 - **The contact address** in the footer (`config/site.json` → `contact`) — a site that sells something
   and offers no way to reach the author is a trust problem and an AdSense/Amazon-associate problem.
 - The fact-check rows in `00-strategy/03-90-DAY-ROADMAP.md`, which every claim on the site defers to.

@@ -75,7 +75,10 @@ Every pillar links to **two** other pillars + the tool + /book/. The tool links 
 
 1. `/about/` — real name or an explicitly-labelled pen name, actual work history in the industry, **no invented credentials**.
 2. `/editorial-policy/` — states plainly: not medical advice, no paid placements in editorial text, corrections logged with dates.
-3. DateModified on every article + a visible "last reviewed" line.
+3. DateModified on every article + a visible "last reviewed" line — **now mechanical:** the
+   `last_reviewed:` field feeds both, and `wf site` fails a page that has no valid date, so the
+   line cannot quietly become decorative. Article schema, Open Graph cards and `feed.xml` are
+   emitted by the same build (see `02-DEPLOY.md`)
 4. Named primary sources for every physiological claim (sleep foundation, CDC/NIOSH shift-work guidance, a named caffeine study) linked with `rel="nofollow"` offsite where appropriate.
 5. The original tool. A page that *does* something earns links a text page can't.
 

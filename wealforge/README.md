@@ -68,7 +68,8 @@ python3 -m unittest discover -s tests -q     # 158 tests, no network
  finetune.py   unsloth/colab/axolotl/llama-factory/dpo configs + MANIFEST.json hashes
  evalkit.py   task cases + adversarial battery + style metrics + base-vs-tuned compare
  site.py      04-seo + 03-tool → docs/: clean URLs, affiliate disclosure injected, every
-              internal link resolved, no invented domain, byte-identical rebuilds
+              internal link resolved, OG/Twitter cards + JSON-LD + RSS when the domain exists,
+              no invented domain, byte-identical rebuilds
  modelhub.py  config/models.json registry: licence traits filter first, then VRAM
                              │  reader assets: safeguards required
                              │  internal docs: integrity rules only

@@ -4,11 +4,11 @@
 
 | file | audience | words | errors | warnings | verdict |
 |---|---|---|---|---|---|
-| `03-tool/README.md` | internal | 647 | 0 | 0 | PASS |
+| `03-tool/README.md` | internal | 697 | 0 | 0 | PASS |
 | `03-tool/index.html` | reader | 4396 | 0 | 0 | PASS |
-| `04-seo/01-KEYWORD-MAP.md` | internal | 1166 | 0 | 0 | PASS |
-| `04-seo/02-DEPLOY.md` | reader | 1043 | 0 | 0 | PASS |
-| `04-seo/README.md` | internal | 651 | 0 | 0 | PASS |
+| `04-seo/01-KEYWORD-MAP.md` | internal | 1209 | 0 | 0 | PASS |
+| `04-seo/02-DEPLOY.md` | reader | 1314 | 0 | 0 | PASS |
+| `04-seo/README.md` | internal | 744 | 0 | 0 | PASS |
 | `04-seo/articles/01-sleep-after-night-shift.md` | reader | 2027 | 0 | 0 | PASS |
 | `04-seo/articles/02-what-to-eat-on-a-night-shift.md` | reader | 1515 | 0 | 0 | PASS |
 | `04-seo/articles/03-caffeine-on-night-shift.md` | reader | 1316 | 0 | 0 | PASS |

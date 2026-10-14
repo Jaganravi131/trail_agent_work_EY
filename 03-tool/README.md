@@ -52,7 +52,7 @@ and pretending otherwise would be the kind of quiet drift that makes a tool wron
 because the tool's dark UI is deliberate and the site's prose pages are light — and any link it
 carries gets rewritten by the builder: a link to a file that has a page becomes that page's URL, a
 link to a repo document that has no page loses its anchor and stays as text, so the deployed folder
-contains no 404s. Edit this file, never `docs/planner/index.html`; CI rebuilds and diffs `docs/` and
+contains no 404s. Its `</head>` also gains the site's Open Graph tags and a `WebApplication` schema node at build time (its own inline favicon is left alone, so the icon is not doubled) — the planner is the most shared page here, and a bare link is how a good tool gets scrolled past. Edit this file, never `docs/planner/index.html`; CI rebuilds and diffs `docs/` and
 fails the run when the two disagree.
 
 ## Checks that already exist
